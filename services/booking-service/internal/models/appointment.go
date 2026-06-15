@@ -20,7 +20,7 @@ type Appointment struct {
 	ClientID     uint      `json:"client_id"`
 	SpecialistID uint      `json:"specialist_id"`
 	ServiceID    uint      `json:"service_id"`
-	StartTime    time.Time `json:"start_time"`
-	EndTime      time.Time `json:"end_time"`
+	StartTime    *time.Time `json:"start_time"`
+	EndTime      *time.Time `json:"end_time"`
 	Status       Status    `json:"status"`
 }

@@ -2,6 +2,7 @@ package repository
 
 import (
 	"booking-service/internal/models"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -14,6 +15,8 @@ type AppointmentRepository interface {
 	GetAllSpecialist(specialist_id uint) ([]models.Appointment, error)
 	Delete(appointment_id uint) error
 	Update(appointment *models.Appointment) error
+	HasConflicts(specialistID uint, start time.Time, end time.Time) (bool, error)
+	WithDB(*gorm.DB) AppointmentRepository
 }
 
 type gormAppointmentRepository struct {
@@ -26,6 +29,10 @@ func NewAppointmentRepository(
 	return &gormAppointmentRepository{
 		db: db,
 	}
+}
+
+func (r *gormAppointmentRepository) WithDB(db *gorm.DB) AppointmentRepository {
+	return &gormAppointmentRepository{db: db}
 }
 
 func (r *gormAppointmentRepository) Create(appointment *models.Appointment) error {
@@ -90,4 +97,27 @@ func (r *gormAppointmentRepository) Update(appointment *models.Appointment) erro
 	}
 
 	return r.db.Save(appointment).Error
+}
+
+func (r *gormAppointmentRepository) HasConflicts(specialistID uint, start time.Time, end time.Time) (bool, error) {
+	var count int64
+
+	activeStatuses := []models.Status{
+		models.StatusCreated,
+		models.StatusConfirmed,
+	}
+
+	err := r.db.Model(&models.Appointment{}).
+		Where("specialist_id = ?", specialistID).
+		Where("status IN ?", activeStatuses).
+		Where("start_time < ?", end).
+		Where("end_time > ?", start).
+		Count(&count).Error
+
+	if err != nil {
+		return false, err
+	}
+
+	return count > 0, nil
+
 }
