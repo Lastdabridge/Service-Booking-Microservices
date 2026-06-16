@@ -27,13 +27,15 @@ func main() {
 	defer producer.Close()
 
 	serviceRepo := repository.NewServicesRepositry(db)
-	// producer := Вызов конструктора()
+	specialistRepo := repository.NewSpecialistRepository(db)
+	scheduleRepo := repository.NewSchedulesRepository(db)
 
 	serivceService := service.NewServicesService(serviceRepo, producer)
-	// serivceService := service.NewServicesService(serviceRepo, producer)
+	specialistService := service.NewSpecialistService(specialistRepo, producer)
+	scheduleService := service.NewSchedulesService(scheduleRepo, producer)
 
 	router := gin.Default()
-	transport.RegisterRoutes(router, serivceService)
+	transport.RegisterRoutes(router, serivceService, specialistService, scheduleService)
 	if err := router.Run(); err != nil {
 		log.Fatalf("не удалось запустить HTTP-сервер: %v", err)
 	}

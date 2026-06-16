@@ -24,7 +24,6 @@ type servicesServise struct {
 	producer *broker.Producer
 }
 
-// func NewServicesService(service repository.ServicesRepository, producer broker.AdminActionEventProducer) ServicesService {
 func NewServicesService(service repository.ServicesRepository, producer *broker.Producer) ServicesService {
 	return &servicesServise{
 		service:  service,
@@ -62,34 +61,34 @@ func (s *servicesServise) CreateService(c context.Context, req dto.CreateService
 }
 
 func (s *servicesServise) UpdateService(c context.Context, id uint, req dto.UpdateServiceRequest) (*models.Service, error) {
-	service, err := s.service.GetByID(id)
+	services, err := s.service.GetByID(id)
 	if err != nil {
 		return nil, err
 	}
 	if req.Title != nil {
-		service.Title = *req.Title
+		services.Title = *req.Title
 	}
 	if req.Description != nil {
-		service.Description = *req.Description
+		services.Description = *req.Description
 	}
 	if req.DurationMinutes != nil {
-		service.DurationMinutes = *req.DurationMinutes
+		services.DurationMinutes = *req.DurationMinutes
 	}
 	if req.Price != nil {
-		service.Price = *req.Price
+		services.Price = *req.Price
 	}
 	if req.IsActive != nil {
-		service.IsActive = *req.IsActive
+		services.IsActive = *req.IsActive
 	}
 
-	if err := s.service.UpdateService(id, service); err != nil {
+	if err := s.service.UpdateService(id, services); err != nil {
 		return nil, err
 	}
 
-	if err := s.producer.Produce(context.Background(), service); err != nil {
+	if err := s.producer.Produce(context.Background(), services); err != nil {
 		return nil, err
 	}
-	return service, nil
+	return services, nil
 }
 
 func (s *servicesServise) DeleteService(id uint) error {

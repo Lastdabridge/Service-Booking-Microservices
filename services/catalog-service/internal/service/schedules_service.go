@@ -9,6 +9,8 @@ import (
 )
 
 type SchedulesService interface {
+	GetByID(id uint) (*models.SpecialistSchedule, error)
+
 	CreateSchedules(c context.Context, id uint, req dto.ScheduleCreateRequest) (*models.SpecialistSchedule, error)
 
 	UpdateSchedules(c context.Context, id uint, req dto.ScheduleUpdateRequest) (*models.SpecialistSchedule, error)
@@ -29,6 +31,15 @@ func NewSchedulesService(
 		service:  service,
 		producer: producer,
 	}
+}
+
+func (s *schedulesService) GetByID(id uint) (*models.SpecialistSchedule, error) {
+	schedule, err := s.GetByID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	return schedule, nil
 }
 
 func (s *schedulesService) CreateSchedules(c context.Context, id uint, req dto.ScheduleCreateRequest) (*models.SpecialistSchedule, error) {
