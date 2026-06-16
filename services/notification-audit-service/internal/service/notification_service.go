@@ -2,10 +2,12 @@ package service
 
 import (
 	"errors"
+	"log"
 
 	"gorm.io/gorm"
 	"github.com/Veoler/notification-audit-service/internal/model"
 	"github.com/Veoler/notification-audit-service/internal/repository"
+	"github.com/Veoler/notification-audit-service/internal/kafka"
 )
 
 var (
@@ -40,6 +42,10 @@ func (s *notificationService) CreateNotification(req model.NotificationCreateReq
 		return nil, err
 	}
 
+	if err := kafka.PublishNotificationEvent("notifications.created", notification); err != nil {
+		log.Printf("notification saved to DB, but Kafka publishing failed: %v", err)
+	}
+
 	return notification, nil
 }
 
@@ -60,5 +66,14 @@ func (s *notificationService) MarkNotificationAsRead(notificationID, userID uint
 		return ErrForbidden
 	}
 
-	return s.repo.MarkAsRead(notificationID)
+	if err := s.repo.MarkAsRead(notificationID); err != nil {
+        return err
+    }
+
+	n.IsRead = true 
+    if err := kafka.PublishNotificationEvent("notifications.read", n); err != nil {
+		log.Printf("status updated in DB, but failed to notify Kafka about read status: %v", err)
+	}
+
+    return nil
 }

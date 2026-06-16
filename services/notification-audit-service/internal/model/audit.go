@@ -16,16 +16,16 @@ type AuditLog struct {
 	Payload       string    `json:"payload"        gorm:"type:text"`
 }
 
-type KafkaEvent struct {
-	Event     string	`json:"event"`
-	UserID    uint  	`json:"user_id"`
-	BookingID uint  	`json:"booking_id"`
-	ClientID  uint  	`json:"client_id"`
-	ServiceID uint  	`json:"service_id"`
-	Email     string	`json:"email"`
-	Role      string	`json:"role"`
-	CreatedAt time.Time `json:"created_at"`
-}
+// type KafkaEvent struct {
+// 	Event     string	`json:"event"`
+// 	UserID    uint  	`json:"user_id"`
+// 	BookingID uint  	`json:"booking_id"`
+// 	ClientID  uint  	`json:"client_id"`
+// 	ServiceID uint  	`json:"service_id"`
+// 	Email     string	`json:"email"`
+// 	Role      string	`json:"role"`
+// 	CreatedAt time.Time `json:"created_at"`
+// }
 
 type AuditLogCreatedRequest struct {
 	EventType		string		`json:"event_type"`  
@@ -36,3 +36,4 @@ type AuditLogCreatedRequest struct {
 	Payload			string  	`json:"payload"`
 	CreatedAt     	time.Time	`json:"created_at"` 
 }
+

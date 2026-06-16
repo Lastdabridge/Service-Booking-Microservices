@@ -29,4 +29,3 @@ type NotificationCreateRequest struct {
 	Message   string           `json:"message"`
 	IsRead    bool             `json:"is_read"`
 }
-
