@@ -96,16 +96,9 @@ func (h *AppointmentHandler) GetSpecialist(ctx *gin.Context) {
 		return
 	}
 
-	headerID, err := strconv.Atoi(ctx.GetHeader("X-User-ID"))
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	urlID = headerID
-	uID := uint(urlID)
-	userID := uID
+	specialistID := uint(urlID)
 
-	appointments, err := h.appointment.GetAllSpecialistAppointments(userID)
+	appointments, err := h.appointment.GetAllSpecialistAppointments(specialistID)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -155,6 +148,10 @@ func (h *AppointmentHandler) Delete(ctx *gin.Context) {
 
 func (h *AppointmentHandler) Create(ctx *gin.Context) {
 	clientID, err := strconv.Atoi(ctx.GetHeader("X-User-ID"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
 	var req dto.AppointmentCreateRequest
 

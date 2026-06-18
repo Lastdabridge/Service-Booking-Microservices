@@ -2,21 +2,21 @@ package repository
 
 import (
 	"booking-service/internal/models"
+	"errors"
 
 	"gorm.io/gorm"
 )
 
 type SpecialistRepository interface {
-	Create(event *models.Specialist) error
 	GetLastUpdated() (*models.Specialist, error)
 	Delete(uint) error
 	GetByID(id uint) (*models.Specialist, error)
 	CheckService(specialistID uint, ServiceID uint) (*models.SpecialistService, error)
-	CreateAttached(*models.SpecialistService) error
-	CreateSchedule(*models.SpecialistShedules) error
-	Update(*models.Specialist) error
 	GetSchedule(specialist_id uint) (*models.SpecialistShedules, error)
 	WithDB(db *gorm.DB) SpecialistRepository
+	UpsertSpecialist(event *models.Specialist) error
+	UpsertSchedule(event *models.SpecialistShedules) error
+	UpsertAttached(*models.SpecialistService) error
 }
 
 type gormSpecialistRepository struct {
@@ -31,24 +31,63 @@ func NewSpecialistRepository(
 	}
 }
 
+func (r *gormSpecialistRepository) UpsertSpecialist(event *models.Specialist) error {
+	var existing models.Specialist
+
+	err := r.db.First(&existing, event.SpecialistID).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return r.db.Create(event).Error
+	} else if err != nil {
+		return err
+	}
+
+	if event.UpdatedAt.After(existing.UpdatedAt) {
+		return r.db.Model(&existing).Updates(event).Error
+	}
+
+	return nil
+}
+
+func (r *gormSpecialistRepository) UpsertSchedule(event *models.SpecialistShedules) error {
+	var existing models.SpecialistShedules
+
+	err := r.db.First(&existing, event.SpecialistID).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return r.db.Create(event).Error
+	} else if err != nil {
+		return err
+	}
+
+	if event.UpdatedAt.After(existing.UpdatedAt) {
+		return r.db.Model(&existing).Updates(event).Error
+	}
+
+	return nil
+}
+
+func (r *gormSpecialistRepository) UpsertAttached(event *models.SpecialistService) error {
+	var existing models.SpecialistService
+
+	err := r.db.Where("specialist_id = ? AND service_id = ?", event.SpecialistID, event.ServiceID).First(&existing).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return r.db.Create(event).Error
+	} else if err != nil {
+		return err
+	}
+
+	if event.UpdatedAt.After(existing.UpdatedAt) {
+		return r.db.Model(&existing).Updates(event).Error
+	}
+
+	return nil
+}
+
 func (r *gormSpecialistRepository) WithDB(db *gorm.DB) SpecialistRepository {
 	return &gormSpecialistRepository{db: db}
 }
 
 func (r *gormSpecialistRepository) Delete(id uint) error {
 	return r.db.Delete(&models.Specialist{}, id).Error
-}
-
-func (r *gormSpecialistRepository) Create(event *models.Specialist) error {
-	if event == nil {
-		return nil
-	}
-
-	if err := r.db.Create(event).Error; err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (r *gormSpecialistRepository) GetLastUpdated() (*models.Specialist, error) {
@@ -91,16 +130,6 @@ func (r *gormSpecialistRepository) CreateAttached(req *models.SpecialistService)
 	return nil
 }
 
-func (r *gormSpecialistRepository) CreateSchedule(req *models.SpecialistShedules) error {
-	if req == nil {
-		return nil
-	}
-	if err := r.db.Create(req).Error; err != nil {
-		return err
-	}
-	return nil
-}
-
 func (r *gormSpecialistRepository) GetSchedule(specialist_id uint) (*models.SpecialistShedules, error) {
 	var schedule models.SpecialistShedules
 
@@ -109,12 +138,4 @@ func (r *gormSpecialistRepository) GetSchedule(specialist_id uint) (*models.Spec
 	}
 
 	return &schedule, nil
-}
-
-func (r *gormSpecialistRepository) Update(req *models.Specialist) error {
-	if req == nil {
-		return nil
-	}
-
-	return r.db.Save(req).Error
 }

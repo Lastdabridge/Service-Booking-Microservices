@@ -2,13 +2,23 @@ package config
 
 import (
 	"fmt"
+	"log"
 	"os"
 
+	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 func SetUpDatabaseConnection() *gorm.DB {
+
+	appEnv := os.Getenv("APP_ENV")
+	if appEnv == "" || appEnv == "local" {
+		if err := godotenv.Load(".env"); err != nil {
+			log.Println(".env file not found")
+		}
+	}
+
 	dbUser := os.Getenv("DB_USER")
 	dbPass := os.Getenv("DB_PASSWORD")
 	dbHost := os.Getenv("DB_HOST")

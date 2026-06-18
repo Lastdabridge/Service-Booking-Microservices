@@ -9,7 +9,9 @@ import (
 	"booking-service/internal/transport"
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -30,7 +32,7 @@ func main() {
 
 	err := broker.InitKafka()
 	if err != nil {
-		panic(err)
+		log.Printf("Предупреждение: Kafka не запущена: %v", err)
 	}
 
 	producer := broker.NewBookingEventsProducer()
@@ -61,7 +63,6 @@ func ConsumeEvents(
 	serviceRepo repository.ServiceRepository,
 ) {
 	log.Println("Kafka consumer started")
-	defer consumer.Reader.Close()
 
 	ctx := context.Background()
 
@@ -85,34 +86,49 @@ func ConsumeEvents(
 			continue
 		}
 
-		switch meta.Event {
+		for {
+			var processError error
+			switch meta.Event {
 
-		case "specialist.created":
-			handleSpecialistCreated(msg.Value, specialistRepo)
+			case "specialist.created":
+				processError = handleSpecialistCreated(msg.Value, specialistRepo)
 
-		case "specialist.updated":
-			handleSpecialistUpdated(msg.Value, specialistRepo)
+			case "specialist.updated":
+				processError = handleSpecialistUpdated(msg.Value, specialistRepo)
 
-		case "specialist.deleted":
-			handleSpecialistDeleted(msg.Value, specialistRepo)
+			case "specialist.deleted":
+				processError = handleSpecialistDeleted(msg.Value, specialistRepo)
 
-		case "specialist.service_attached":
-			handleSpecialistAttached(msg.Value, specialistRepo)
+			case "specialist.service_attached":
+				processError = handleSpecialistAttached(msg.Value, specialistRepo)
 
-		case "specialist.schedule_updated":
-			handleScheduleUpdated(msg.Value, specialistRepo)
+			case "specialist.schedule_updated":
+				processError = handleScheduleUpdated(msg.Value, specialistRepo)
 
-		case "service.created":
-			handleServiceCreated(msg.Value, serviceRepo)
+			case "service.created":
+				processError = handleServiceCreated(msg.Value, serviceRepo)
 
-		case "service.updated":
-			handleServiceUpdated(msg.Value, serviceRepo)
+			case "service.updated":
+				processError = handleServiceUpdated(msg.Value, serviceRepo)
 
-		case "service.deleted":
-			handleServiceDeleted(msg.Value, serviceRepo)
+			case "service.deleted":
+				processError = handleServiceDeleted(msg.Value, serviceRepo)
 
-		default:
-			log.Printf("неизвестный event: %s", meta.Event)
+			default:
+				log.Printf("неизвестный event: %s", meta.Event)
+			}
+
+			if processError == nil {
+				break
+			}
+
+			log.Printf("ошибка обработки события, повторная попытка через 5 секунд: %v", processError)
+			select {
+			case <-ctx.Done(): // Если приложение закрывается — мгновенно выходим
+				log.Println("Контекст завершен, останавливаем обработку")
+				return
+			case <-time.After(5 * time.Second): // Иначе просто ждем 5 секунд
+			}
 		}
 
 		if err := consumer.Reader.CommitMessages(ctx, msg); err != nil {
@@ -125,284 +141,150 @@ func ConsumeEvents(
 func handleSpecialistCreated(
 	data []byte,
 	repo repository.SpecialistRepository,
-) {
+) error {
 	var event models.Specialist
 
 	if err := json.Unmarshal(data, &event); err != nil {
-		log.Printf("ошибка specialist.created: %v", err)
-		return
+		log.Printf("критическая ошибка десериализации (сообщение пропущено): %v", err)
+		return nil
 	}
 
-	if err := repo.Create(&event); err != nil {
-		log.Printf("ошибка создания специалиста: %v", err)
+	if err := repo.UpsertSpecialist(&event); err != nil {
+		return fmt.Errorf("ошибка создания специалиста: %v", err)
 	}
+
+	return nil
 }
 
 func handleSpecialistUpdated(
 	data []byte,
 	repo repository.SpecialistRepository,
-) {
+) error {
 	var event models.Specialist
 
 	if err := json.Unmarshal(data, &event); err != nil {
-		log.Printf("ошибка specialist.updated: %v", err)
-		return
+		log.Printf("критическая ошибка десериализации (сообщение пропущено): %v", err)
+		return nil
 	}
 
-	if err := repo.Update(&event); err != nil {
-		log.Printf("ошибка обновления специалиста: %v", err)
+	if err := repo.UpsertSpecialist(&event); err != nil {
+		return fmt.Errorf("ошибка обновления специалиста: %v", err)
 	}
+
+	return nil
 }
 
 func handleSpecialistDeleted(
 	data []byte,
 	repo repository.SpecialistRepository,
-) {
-	var event models.Specialist
+) error {
+	var event models.SpecialistDelete
 
 	if err := json.Unmarshal(data, &event); err != nil {
-		log.Printf("ошибка specialist.deleted: %v", err)
-		return
+		log.Printf("критическая ошибка десериализации (сообщение пропущено): %v", err)
+		return nil
 	}
 
 	if err := repo.Delete(event.ID); err != nil {
-		log.Printf("ошибка удаления специалиста: %v", err)
+		if event.ID <= 0 {
+			log.Printf("критическая ошибка: невалидный ID услуги (сообщение пропущено): %d", event.ID)
+			return nil
+		}
 	}
+
+	return nil
 }
 
 func handleSpecialistAttached(
 	data []byte,
 	repo repository.SpecialistRepository,
-) {
+) error {
 	var event models.SpecialistService
 
 	if err := json.Unmarshal(data, &event); err != nil {
-		log.Printf("ошибка specialist.service_attached: %v", err)
-		return
+		log.Printf("критическая ошибка десериализации (сообщение пропущено): %v", err)
+		return nil
 	}
 
-	if err := repo.CreateAttached(&event); err != nil {
-		log.Printf("ошибка привязки услуги: %v", err)
+	if err := repo.UpsertAttached(&event); err != nil {
+		return fmt.Errorf("ошибка привязки услуги: %v", err)
 	}
+	return nil
 }
 
 func handleScheduleUpdated(
 	data []byte,
 	repo repository.SpecialistRepository,
-) {
+) error {
 	var event models.SpecialistShedules
 
 	if err := json.Unmarshal(data, &event); err != nil {
-		log.Printf("ошибка specialist.schedule_updated: %v", err)
-		return
+		log.Printf("критическая ошибка десериализации (сообщение пропущено): %v", err)
+		return nil
 	}
 
-	if err := repo.CreateSchedule(&event); err != nil {
-		log.Printf("ошибка обновления расписания: %v", err)
+	if err := repo.UpsertSchedule(&event); err != nil {
+		return fmt.Errorf("ошибка обновления расписания: %v", err)
 	}
+
+	return nil
 }
 
 func handleServiceCreated(
 	data []byte,
 	repo repository.ServiceRepository,
-) {
+) error {
 	var event models.Service
 
 	if err := json.Unmarshal(data, &event); err != nil {
-		log.Printf("ошибка service.created: %v", err)
-		return
+		log.Printf("критическая ошибка десериализации (сообщение пропущено): %v", err)
+		return nil
 	}
 
-	if err := repo.Create(&event); err != nil {
-		log.Printf("ошибка создания услуги: %v", err)
+	if err := repo.Upsert(&event); err != nil {
+		return fmt.Errorf("ошибка создания услуги: %v", err)
 	}
+
+	return nil
 }
 
 func handleServiceUpdated(
 	data []byte,
 	repo repository.ServiceRepository,
-) {
+) error {
 	var event models.Service
 
 	if err := json.Unmarshal(data, &event); err != nil {
-		log.Printf("ошибка service.updated: %v", err)
-		return
+		log.Printf("критическая ошибка десериализации (сообщение пропущено): %v", err)
+		return nil
 	}
 
-	if err := repo.Update(&event); err != nil {
-		log.Printf("ошибка обновления услуги: %v", err)
+	if err := repo.Upsert(&event); err != nil {
+		return fmt.Errorf("ошибка обновления услуги: %v", err)
 	}
+
+	return nil
 }
 
 func handleServiceDeleted(
 	data []byte,
 	repo repository.ServiceRepository,
-) {
+) error {
 	var event models.ServiceDelete
 
 	if err := json.Unmarshal(data, &event); err != nil {
-		log.Printf("ошибка service.deleted: %v", err)
-		return
+		log.Printf("критическая ошибка десериализации (сообщение пропущено): %v", err)
+		return nil
 	}
 
 	if event.ID <= 0 {
-		log.Printf("невалидный ID: %d", event.ID)
-		return
+		log.Printf("критическая ошибка: невалидный ID услуги (сообщение пропущено): %d", event.ID)
+		return nil
 	}
 
 	if err := repo.Delete(event.ID); err != nil {
-		log.Printf("ошибка удаления услуги: %v", err)
-	}
-}
-
-/*
-func getSpecialistEvent(consumer broker.BookingEventsConsumer, s repository.SpecialistRepository) {
-	var event models.Specialist
-	defer consumer.Reader.Close()
-
-	ctx := context.Background()
-	for {
-		msg, err := consumer.Reader.FetchMessage(ctx)
-		if err != nil {
-			if ctx.Err() != nil {
-				break
-			}
-			log.Printf("ошибка чтения сообщения: %v", err)
-			continue
-		}
-
-		if err := json.Unmarshal(msg.Value, &event); err != nil {
-			log.Printf("Ошибка десериализации: %v", err)
-			consumer.Reader.CommitMessages(ctx, msg)
-			continue
-		}
-
-		if event.Event == "specialist.created" {
-
-			if err := s.Create(&event); err != nil {
-				log.Printf("не удалось создать catalog-event-specialist \"specialist.created\": %v", err)
-			}
-		} else if event.Event == "specialist.updated" {
-			if err := s.Update(&event); err != nil {
-				log.Printf("не удалось создать catalog-event-specialist \"specialist.updated\": %v", err)
-			}
-		} else if event.Event == "specialist.deleted" {
-			if event.ID <= 0 {
-				log.Println("Невалидный ID при удалении услуги")
-			}
-
-			if err := s.Delete(event.ID); err != nil {
-				log.Printf("не удалось создать catalog-event-specialist \"specialist.deleted\": %v", err)
-			}
-		} else {
-			log.Print("такого ивента не существует")
-		}
-
-		log.Printf("получена модель service: \n%v", event)
-
-		if err := consumer.Reader.CommitMessages(ctx, msg); err != nil {
-			log.Printf("Ошибка коммита: %v", err)
-		}
-
-		log.Println("Worker booking-service остановлен")
+		return fmt.Errorf("ошибка удаления услуги: %v", err)
 	}
 
+	return nil
 }
-
-func specialistAttachedAndScheduleUpdatedEvent(consumer broker.BookingEventsConsumer, s repository.SpecialistRepository) {
-	var event models.SpecialistService
-	var schedule models.SpecialistShedules
-
-	defer consumer.Reader.Close()
-
-	ctx := context.Background()
-	for {
-		msg, err := consumer.Reader.FetchMessage(ctx)
-		if err != nil {
-			if ctx.Err() != nil {
-				break
-			}
-			log.Printf("ошибка чтения сообщения: %v", err)
-			continue
-		}
-
-		if err := json.Unmarshal(msg.Value, &event); err != nil {
-			log.Printf("Ошибка десериализации: %v", err)
-			consumer.Reader.CommitMessages(ctx, msg)
-			continue
-		}
-
-		if event.Event == "specialist.service_attached" {
-			if err := s.CreateAttached(&event); err != nil {
-				log.Printf("не удалось создать catalog-event-specialist.service_attached \"specialist.service_attached\": %v", err)
-			}
-		} else if schedule.Event == "specialist.schedule_updated" {
-			if err := s.CreateSchedule(&schedule); err != nil {
-				log.Printf("не удалось создать catalog-event-specialist.schedule_updated\"specialist.schedule_updated\": %v", err)
-			}
-		} else {
-			log.Print("такого ивента не существует")
-		}
-
-		log.Printf("получена модель service_attached: \n%v", event)
-
-		if err := consumer.Reader.CommitMessages(ctx, msg); err != nil {
-			log.Printf("Ошибка коммита: %v", err)
-		}
-
-		log.Println("Worker booking-service остановлен")
-	}
-}
-
-func getServiceEvent(consumer broker.BookingEventsConsumer, s repository.ServiceRepository) {
-	var event models.Service
-
-	defer consumer.Reader.Close()
-
-	ctx := context.Background()
-	for {
-		msg, err := consumer.Reader.FetchMessage(ctx)
-		if err != nil {
-			if ctx.Err() != nil {
-				break
-			}
-			log.Printf("ошибка чтения сообщения: %v", err)
-			continue
-		}
-
-		if err := json.Unmarshal(msg.Value, &event); err != nil {
-			log.Printf("Ошибка десериализации: %v", err)
-			consumer.Reader.CommitMessages(ctx, msg)
-			continue
-		}
-
-		if *event.Event == "service.created" {
-			if err := s.Create(&event); err != nil {
-				log.Printf("не удалось создать catalog-event-service \"service.created\": %v", err)
-			}
-		} else if *event.Event == "service.updated" {
-			if err := s.Update(&event); err != nil {
-				log.Printf("не удалось создать catalog-event-service \"service.updated\": %v", err)
-			}
-		} else if *event.Event == "service.deleted" {
-			if event.ID <= 0 {
-				log.Println("Невалидный ID при удалении услуги")
-			}
-
-			if err := s.Delete(event.ID); err != nil {
-				log.Printf("не удалось создать catalog-event-service \"service.deleted\": %v", err)
-			}
-		} else {
-			log.Print("такого ивента не существует")
-		}
-
-		log.Printf("получена модель service: \n%v", event)
-
-		if err := consumer.Reader.CommitMessages(ctx, msg); err != nil {
-			log.Printf("Ошибка коммита: %v", err)
-		}
-
-		log.Println("Worker booking-service остановлен")
-	}
-}
-*/

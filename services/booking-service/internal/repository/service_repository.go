@@ -2,16 +2,16 @@ package repository
 
 import (
 	"booking-service/internal/models"
+	"errors"
 
 	"gorm.io/gorm"
 )
 
 type ServiceRepository interface {
-	Create(event *models.Service) error
+	Upsert(service *models.Service) error
 	GetLastUpdated() (*models.Service, error)
 	Delete(uint) error
 	GetByID(uint) (*models.Service, error)
-	Update(*models.Service) error
 	WithDB(*gorm.DB) ServiceRepository
 }
 
@@ -27,6 +27,23 @@ func NewServiceRepository(
 	}
 }
 
+func (r *gormServiceRepository) Upsert(event *models.Service) error {
+	var existing models.Service
+
+	err := r.db.First(&existing, event.ServiceID).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return r.db.Create(event).Error
+	} else if err != nil {
+		return err
+	}
+
+	if event.UpdatedAt.After(existing.UpdatedAt) {
+		return r.db.Model(&existing).Updates(event).Error
+	}
+
+	return nil
+}
+
 func (r *gormServiceRepository) WithDB(db *gorm.DB) ServiceRepository {
 	return &gormServiceRepository{db: db}
 }
@@ -35,22 +52,10 @@ func (r *gormServiceRepository) Delete(id uint) error {
 	return r.db.Delete(&models.Service{}, id).Error
 }
 
-func (r *gormServiceRepository) Create(event *models.Service) error {
-	if event == nil {
-		return nil
-	}
-
-	if err := r.db.Create(event).Error; err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (r *gormServiceRepository) GetLastUpdated() (*models.Service, error) {
 	var last models.Service
 
-	if err := r.db.Where("event = service.updated").Order("created_at desc").First(&last).Error; err != nil {
+	if err := r.db.Where("event = ?", "service.updated").Order("created_at desc").First(&last).Error; err != nil {
 		return nil, err
 	}
 
@@ -65,16 +70,4 @@ func (r *gormServiceRepository) GetByID(id uint) (*models.Service, error) {
 	}
 
 	return &service, nil
-}
-
-func (r *gormServiceRepository) Update(req *models.Service) error {
-	if req == nil {
-		return nil
-	}
-
-	if err := r.db.Save(req).Error; err != nil {
-		return err
-	}
-
-	return nil
 }

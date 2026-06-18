@@ -16,6 +16,10 @@ type Specialist struct {
 	IsActive     bool   `json:"is_active"`
 }
 
+type SpecialistDelete struct {
+	ID uint `json:"id"`
+}
+
 // specialist_attached
 type SpecialistService struct {
 	gorm.Model

@@ -6,15 +6,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"os"
 	"time"
 
 	"github.com/segmentio/kafka-go"
-)
-
-var (
-	kafkaBroker = fmt.Sprintf("%s", os.Getenv("KAFKA_BROKER"))
-	kafkaTopic  = fmt.Sprintf("%s", os.Getenv("KAFKA_PRODUCER_TOPIC"))
 )
 
 type BookingEventsProducer struct {

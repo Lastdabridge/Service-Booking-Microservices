@@ -276,6 +276,12 @@ func (s *appointmentService) isValidCreate(tx *gorm.DB, appointment dto.Appointm
 		return errors.New("specialist_id обязателен")
 	}
 	specialist, err := s.Specialist.WithDB(tx).GetByID(*appointment.SpecialistID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("такого специалиста не существует")
+		}
+		return err
+	}
 	if appointment.ServiceID == nil {
 		return errors.New("service_id обязателен")
 	}
