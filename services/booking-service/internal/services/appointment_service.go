@@ -62,7 +62,10 @@ func (s *appointmentService) CreateAppointment(req dto.AppointmentCreateRequest)
 			return err
 		}
 
-		endTime, err := s.getEndTime(tx, *startTime)
+		if req.ServiceID == nil {
+			return errors.New("service_id обязателен")
+		}
+		endTime, err := s.getEndTime(*req.ServiceID, tx, *startTime)
 		if err != nil {
 			return err
 		}
@@ -220,16 +223,17 @@ func (s *appointmentService) getStartTime(startTimeString string) (*time.Time, e
 	return &startTime, nil
 }
 
-func (s *appointmentService) getEndTime(tx *gorm.DB, startTime time.Time) (*time.Time, error) {
-	event, err := s.Service.WithDB(tx).GetLastUpdated()
+func (s *appointmentService) getEndTime(serviceID uint, tx *gorm.DB, startTime time.Time) (*time.Time, error) {
+	service, err := s.Service.WithDB(tx).GetByID(serviceID)
 	if err != nil {
 		return nil, err
 	}
-	if event.DurationMinutes == nil {
+
+	if service.DurationMinutes == nil {
 		return nil, errors.New("длительность услуги не задана")
 	}
 
-	duration := time.Duration(*event.DurationMinutes) * time.Minute
+	duration := time.Duration(*service.DurationMinutes) * time.Minute
 	endTime := startTime.Add(duration)
 
 	return &endTime, nil
@@ -278,7 +282,6 @@ func (s *appointmentService) isValidCreate(tx *gorm.DB, appointment dto.Appointm
 	if !specialist.IsActive {
 		return errors.New("специалист на данный момент не активен")
 	}
-
 	service, err := s.Service.WithDB(tx).GetByID(*appointment.ServiceID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
