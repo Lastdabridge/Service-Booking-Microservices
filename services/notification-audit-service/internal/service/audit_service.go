@@ -2,31 +2,37 @@ package service
 
 import (
 	"errors"
-	"log"
+	"context"
+	"time"
 
 	"gorm.io/gorm"
 	"github.com/Veoler/notification-audit-service/internal/model"
 	"github.com/Veoler/notification-audit-service/internal/repository"
-	"github.com/Veoler/notification-audit-service/internal/kafka"
 )
 
 var ErrAuditLogNotFound = errors.New("audit log not found")
 
 type AuditService interface {
-	CreateAuditLog(req model.AuditLogCreatedRequest) (*model.AuditLog, error)
-	GetAllAuditLogs() ([]model.AuditLog, error)
-	GetAuditLogByID(id uint) (*model.AuditLog, error)
+	CreateAuditLog(ctx context.Context, req model.AuditLogCreatedRequest) (*model.AuditLog, error)
+	GetAllAuditLogs(ctx context.Context, ) ([]model.AuditLog, error)
+	GetAuditLogByID(ctx context.Context, id uint) (*model.AuditLog, error)
+	IsSuspicious(ctx context.Context, actorID uint, eventType string, window time.Duration, threshold int64) (bool, error)
+}
+
+type AuditProducer interface {
+	PublishAuditLogged(ctx context.Context, auditLog *model.AuditLog, sourceService string)
 }
 
 type auditService struct {
 	repo repository.AuditRepository
+	producer AuditProducer
 }
 
-func NewAuditService(repo repository.AuditRepository) AuditService {
-	return &auditService{repo: repo}
+func NewAuditService(repo repository.AuditRepository, producer AuditProducer) AuditService {
+	return &auditService{repo: repo, producer: producer}
 }
 
-func (s *auditService) CreateAuditLog(req model.AuditLogCreatedRequest) (*model.AuditLog, error) {
+func (s *auditService) CreateAuditLog(ctx context.Context, req model.AuditLogCreatedRequest) (*model.AuditLog, error) {
 	auditLog := &model.AuditLog{
 		Model: gorm.Model{
 			CreatedAt: req.CreatedAt, 
@@ -39,28 +45,21 @@ func (s *auditService) CreateAuditLog(req model.AuditLogCreatedRequest) (*model.
 		Payload:       req.Payload,
 	}
 
-	if err := s.repo.Create(auditLog); err != nil {
+	if err := s.repo.Create(ctx, auditLog); err != nil {
 		return nil, err
 	}
 
-	action := "audit.logged"
-	if auditLog.EventType == "unauthorized_access_attempt" || auditLog.EventType == "suspicious" {
-		action = "suspicious.activity.detected"
-	}
-
-	if err := kafka.PublishAuditLogEvent(action, auditLog); err != nil {
-		log.Printf("WARNING: Audit log saved to DB, but failed to stream to Kafka: %v", err)
-	}
+	s.producer.PublishAuditLogged(ctx, auditLog, req.SourceService)
 
 	return auditLog, nil
 }
 
-func (s *auditService) GetAllAuditLogs() ([]model.AuditLog, error) {
-	return s.repo.GetAll()
+func (s *auditService) GetAllAuditLogs(ctx context.Context, ) ([]model.AuditLog, error) {
+	return s.repo.GetAll(ctx)
 }
 
-func (s *auditService) GetAuditLogByID(id uint) (*model.AuditLog, error) {
-	auditLog, err := s.repo.GetByID(id)
+func (s *auditService) GetAuditLogByID(ctx context.Context, id uint) (*model.AuditLog, error) {
+	auditLog, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrAuditLogNotFound
@@ -68,4 +67,15 @@ func (s *auditService) GetAuditLogByID(id uint) (*model.AuditLog, error) {
 		return nil, err
 	}
 	return auditLog, nil
+}
+
+func (s *auditService) IsSuspicious(ctx context.Context, actorID uint, eventType string, window time.Duration, threshold int64) (bool, error) {
+	since := time.Now().Add(-window)
+ 
+	count, err := s.repo.CountRecentByActor(ctx, actorID, eventType, since)
+	if err != nil {
+		return false, err
+	}
+ 
+	return count >= threshold, nil
 }

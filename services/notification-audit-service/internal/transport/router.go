@@ -11,14 +11,14 @@ func SetupRouter(notifHandler *NotificationHandler, auditHandler *AuditHandler) 
 	{
 		notifications := auth.Group("/notifications")
 		{
-			notifications.GET("/my", notifHandler.GetMy)
-			notifications.PATCH("/:id/read", notifHandler.MarkAsRead)
+			notifications.GET("/my", notifHandler.GetMyNotifs)
+			notifications.PATCH("/:id/read", notifHandler.MarkNotifAsRead)
 		}
 
 		audit := auth.Group("/audit", RequireRole("admin"))
 		{
-			audit.GET("/events", auditHandler.GetAll)
-			audit.GET("/events/:id", auditHandler.GetByID)
+			audit.GET("/events", auditHandler.GetAllAudits)
+			audit.GET("/events/:id", auditHandler.GetAuditByID)
 		}
 	}
 

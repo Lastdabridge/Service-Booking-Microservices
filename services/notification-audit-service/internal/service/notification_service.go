@@ -1,13 +1,12 @@
 package service
 
 import (
+	"context"
 	"errors"
-	"log"
 
 	"gorm.io/gorm"
 	"github.com/Veoler/notification-audit-service/internal/model"
 	"github.com/Veoler/notification-audit-service/internal/repository"
-	"github.com/Veoler/notification-audit-service/internal/kafka"
 )
 
 var (
@@ -16,20 +15,27 @@ var (
 )
 
 type NotificationService interface {
-	CreateNotification(req model.NotificationCreateRequest) (*model.Notification, error)
-	GetMyNotifications(userID uint) ([]model.Notification, error)
-	MarkNotificationAsRead(notificationID, userID uint) error
+	CreateNotification(ctx context.Context, req model.NotificationCreateRequest, sourceEvent string) (*model.Notification, error)
+	GetMyNotifications(ctx context.Context, userID uint) ([]model.Notification, error)
+	MarkNotificationAsRead(ctx context.Context, notificationID, userID uint) error
+}
+
+type NotificationProducer interface {
+	PublishNotificationCreated(ctx context.Context, notif *model.Notification, sourceEvent string)
+	PublishNotificationRead(ctx context.Context, notif *model.Notification)
+	PublishNotificationFailed(ctx context.Context, userID uint, sourceEvent, reason string)
 }
 
 type notificationService struct {
 	repo repository.NotificationRepository
+	producer NotificationProducer
 }
 
-func NewNotificationService(repo repository.NotificationRepository) NotificationService {
-	return &notificationService{repo: repo}
+func NewNotificationService(repo repository.NotificationRepository, producer NotificationProducer) NotificationService {
+	return &notificationService{repo: repo, producer: producer}
 }
 
-func (s *notificationService) CreateNotification(req model.NotificationCreateRequest) (*model.Notification, error) {
+func (s *notificationService) CreateNotification(ctx context.Context, req model.NotificationCreateRequest, sourceEvent string) (*model.Notification, error) {
 	notification := &model.Notification{
 		UserID:  req.UserID,
 		Type:    req.Type,
@@ -38,23 +44,21 @@ func (s *notificationService) CreateNotification(req model.NotificationCreateReq
 		IsRead:  false,
 	}
 
-	if err := s.repo.Create(notification); err != nil {
+	if err := s.repo.Create(ctx, notification); err != nil {
+		s.producer.PublishNotificationFailed(ctx, req.UserID, sourceEvent, err.Error())
 		return nil, err
 	}
 
-	if err := kafka.PublishNotificationEvent("notifications.created", notification); err != nil {
-		log.Printf("notification saved to DB, but Kafka publishing failed: %v", err)
-	}
-
+	s.producer.PublishNotificationCreated(ctx, notification, sourceEvent)
 	return notification, nil
 }
 
-func (s *notificationService) GetMyNotifications(userID uint) ([]model.Notification, error) {
-	return s.repo.GetByUserID(userID)
+func (s *notificationService) GetMyNotifications(ctx context.Context, userID uint) ([]model.Notification, error) {
+	return s.repo.GetByUserID(ctx, userID)
 }
 
-func (s *notificationService) MarkNotificationAsRead(notificationID, userID uint) error {
-	n, err := s.repo.GetByID(notificationID)
+func (s *notificationService) MarkNotificationAsRead(ctx context.Context, notificationID, userID uint) error {
+	notification, err := s.repo.GetByID(ctx, notificationID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return ErrNotificationNotFound
@@ -62,18 +66,17 @@ func (s *notificationService) MarkNotificationAsRead(notificationID, userID uint
 		return err
 	}
 
-	if n.UserID != userID {
+	if notification.UserID != userID {
 		return ErrForbidden
 	}
 
-	if err := s.repo.MarkAsRead(notificationID); err != nil {
+	if err := s.repo.MarkAsRead(ctx, notificationID); err != nil {
         return err
     }
 
-	n.IsRead = true 
-    if err := kafka.PublishNotificationEvent("notifications.read", n); err != nil {
-		log.Printf("status updated in DB, but failed to notify Kafka about read status: %v", err)
-	}
+	
+	notification.IsRead = true
+	s.producer.PublishNotificationRead(ctx, notification)
 
     return nil
 }

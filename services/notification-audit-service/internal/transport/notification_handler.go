@@ -10,17 +10,18 @@ import (
 )
 
 type NotificationHandler struct {
-	notification service.NotificationService
+	svc service.NotificationService
 }
 
-func NewNotificationHandler(notification service.NotificationService) *NotificationHandler {
-	return &NotificationHandler{notification: notification}
+func NewNotificationHandler(svc service.NotificationService) *NotificationHandler {
+	return &NotificationHandler{svc: svc}
 }
 
-func (h *NotificationHandler) GetMy(c *gin.Context) {
+func (h *NotificationHandler) GetMyNotifs(c *gin.Context) {
 	userID := c.MustGet("userID").(uint)
-
-	notifications, err := h.notification.GetMyNotifications(userID)
+	// C.Request.Context() - контекст HTTP-запроса. Если клиент закроет соединение до ответа,
+	// этот ctx отменится, и запрос к БД внутри сервиса прервётся.
+	notifications, err := h.svc.GetMyNotifications(c.Request.Context(), userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -29,7 +30,7 @@ func (h *NotificationHandler) GetMy(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": notifications})
 }
 
-func (h *NotificationHandler) MarkAsRead(c *gin.Context) {
+func (h *NotificationHandler) MarkNotifAsRead(c *gin.Context) {
 	userID := c.MustGet("userID").(uint)
 
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
@@ -38,7 +39,7 @@ func (h *NotificationHandler) MarkAsRead(c *gin.Context) {
 		return
 	}
 
-	if err := h.notification.MarkNotificationAsRead(uint(id), userID); err != nil {
+	if err := h.svc.MarkNotificationAsRead(c.Request.Context(), uint(id), userID); err != nil {
 		switch {
 		case errors.Is(err, service.ErrNotificationNotFound):
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
