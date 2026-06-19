@@ -22,3 +22,11 @@ func NewBookingEventsConsumer() *BookingEventsConsumer {
 		}),
 	}
 }
+
+func (c BookingEventsConsumer) Close() error {
+	if c.Reader == nil {
+		return nil
+	}
+
+	return c.Reader.Close()
+}

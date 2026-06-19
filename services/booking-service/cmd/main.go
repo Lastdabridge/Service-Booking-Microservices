@@ -36,7 +36,10 @@ func main() {
 	}
 
 	producer := broker.NewBookingEventsProducer()
+	defer producer.Close()
+
 	bookingEventsConsumer := broker.NewBookingEventsConsumer()
+	defer bookingEventsConsumer.Close()
 
 	appointmentService := services.NewAppointmentService(appointmentRepo, producer, catalogRepo, specialistRepo, db)
 	transport.RegisterRoutes(router, appointmentService)

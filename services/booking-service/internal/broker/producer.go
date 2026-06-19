@@ -26,6 +26,14 @@ type Booking struct {
 	CreatedAt    time.Time `json:"created_at"`
 }
 
+func (p BookingEventsProducer) Close() error {
+	if p.writer == nil {
+		return nil
+	}
+
+	return p.writer.Close()
+}
+
 func (p BookingEventsProducer) PublishBookingEvent(booking models.Appointment, event string) error {
 	events := Booking{
 		Event:        event,
