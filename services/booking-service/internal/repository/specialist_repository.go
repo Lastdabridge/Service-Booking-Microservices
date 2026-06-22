@@ -34,7 +34,7 @@ func NewSpecialistRepository(
 func (r *gormSpecialistRepository) UpsertSpecialist(event *models.Specialist) error {
 	var existing models.Specialist
 
-	err := r.db.First(&existing, event.SpecialistID).Error
+	err := r.db.Where("specialist_id = ?", event.SpecialistID).First(&existing).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return r.db.Create(event).Error
 	} else if err != nil {
@@ -87,7 +87,7 @@ func (r *gormSpecialistRepository) WithDB(db *gorm.DB) SpecialistRepository {
 }
 
 func (r *gormSpecialistRepository) Delete(id uint) error {
-	return r.db.Delete(&models.Specialist{}, id).Error
+	return r.db.Where("specialist_id = ?", id).Delete(&models.Specialist{}).Error
 }
 
 func (r *gormSpecialistRepository) GetLastUpdated() (*models.Specialist, error) {

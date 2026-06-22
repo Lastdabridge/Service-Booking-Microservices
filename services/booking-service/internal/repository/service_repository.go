@@ -30,7 +30,7 @@ func NewServiceRepository(
 func (r *gormServiceRepository) Upsert(event *models.Service) error {
 	var existing models.Service
 
-	err := r.db.First(&existing, event.ServiceID).Error
+	err := r.db.Where("service_id = ?", event.ServiceID).First(&existing).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return r.db.Create(event).Error
 	} else if err != nil {
@@ -49,7 +49,7 @@ func (r *gormServiceRepository) WithDB(db *gorm.DB) ServiceRepository {
 }
 
 func (r *gormServiceRepository) Delete(id uint) error {
-	return r.db.Delete(&models.Service{}, id).Error
+	return r.db.Where("service_id = ?", id).Delete(&models.Service{}).Error
 }
 
 func (r *gormServiceRepository) GetLastUpdated() (*models.Service, error) {

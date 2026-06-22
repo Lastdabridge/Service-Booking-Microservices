@@ -20,10 +20,29 @@ func SetUpDatabaseConnection() *gorm.DB {
 	}
 
 	dbUser := os.Getenv("DB_USER")
+	if dbUser == "" {
+		log.Fatal("dbUser пуст")
+	}
+
 	dbPass := os.Getenv("DB_PASSWORD")
+	if dbPass == "" {
+		log.Fatal("dbPass пуст")
+	}
+
 	dbHost := os.Getenv("DB_HOST")
+	if dbHost == "" {
+		log.Fatal("dbHost пуст")
+	}
+
 	dbName := os.Getenv("DB_NAME")
+	if dbName == "" {
+		log.Fatal("dbName пуст")
+	}
+
 	dbPort := os.Getenv("DB_PORT")
+	if dbPort == "" {
+		log.Fatal("dbPort пуст")
+	}
 
 	dsn := fmt.Sprintf("host=%v user=%v password=%v dbname=%v port=%v", dbHost, dbUser, dbPass, dbName, dbPort)
 

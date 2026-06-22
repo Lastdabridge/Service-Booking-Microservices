@@ -295,6 +295,9 @@ func (s *appointmentService) isValidCreate(tx *gorm.DB, appointment dto.Appointm
 		}
 		return err
 	}
+	if service.IsActive == nil {
+		return errors.New("isActive не указан")
+	}
 	if !*service.IsActive {
 		return errors.New("такая услуга не активна")
 	}

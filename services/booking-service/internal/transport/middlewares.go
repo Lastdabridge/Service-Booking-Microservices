@@ -23,7 +23,7 @@ const (
 
 func AuthorizationMiddleware(ctx *gin.Context) {
 	userRole := ctx.GetHeader("X-User-Role")
-	if ctx.Request.URL.String() == GetAll && ctx.Request.Method == http.MethodGet {
+	if ctx.FullPath() == GetAll && ctx.Request.Method == http.MethodGet {
 		if userRole != AdminRole {
 			ctx.JSON(http.StatusForbidden, gin.H{"error": "вы не admin"})
 			ctx.Abort()
@@ -31,7 +31,7 @@ func AuthorizationMiddleware(ctx *gin.Context) {
 		}
 	}
 
-	if ctx.Request.URL.String() == GetAllMyAppointments && ctx.Request.Method == http.MethodGet {
+	if ctx.FullPath() == GetAllMyAppointments && ctx.Request.Method == http.MethodGet {
 		if userRole != ClientRole {
 			ctx.JSON(http.StatusForbidden, gin.H{"error": "вы не client"})
 			ctx.Abort()
@@ -57,7 +57,7 @@ func AuthorizationMiddleware(ctx *gin.Context) {
 		}
 	}
 
-	if ctx.Request.URL.String() == CreateAppointment && ctx.Request.Method == http.MethodPost {
+	if ctx.FullPath() == CreateAppointment && ctx.Request.Method == http.MethodPost {
 		if userRole != ClientRole {
 			ctx.JSON(http.StatusForbidden, gin.H{"error": "вы не client"})
 			ctx.Abort()
