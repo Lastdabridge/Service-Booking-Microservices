@@ -65,7 +65,6 @@ type KafkaEvent struct {
 	// Поля из gateway.events
 	Path   string `json:"path"`
 	Method string `json:"method"`
-	Reason string `json:"reason"` // причина отказа при access.denied
 
 	CreatedAt string `json:"created_at"`
 }
