@@ -51,7 +51,7 @@ func (r *gormSpecialistRepository) UpsertSpecialist(event *models.Specialist) er
 func (r *gormSpecialistRepository) UpsertSchedule(event *models.SpecialistShedules) error {
 	var existing models.SpecialistShedules
 
-	err := r.db.First(&existing, event.SpecialistID).Error
+	err := r.db.Where("specialist_id = ?", event.SpecialistID).First(&existing).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return r.db.Create(event).Error
 	} else if err != nil {

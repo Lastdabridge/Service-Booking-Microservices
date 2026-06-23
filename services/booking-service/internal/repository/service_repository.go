@@ -9,7 +9,6 @@ import (
 
 type ServiceRepository interface {
 	Upsert(service *models.Service) error
-	GetLastUpdated() (*models.Service, error)
 	Delete(uint) error
 	GetByID(uint) (*models.Service, error)
 	WithDB(*gorm.DB) ServiceRepository
@@ -50,16 +49,6 @@ func (r *gormServiceRepository) WithDB(db *gorm.DB) ServiceRepository {
 
 func (r *gormServiceRepository) Delete(id uint) error {
 	return r.db.Where("service_id = ?", id).Delete(&models.Service{}).Error
-}
-
-func (r *gormServiceRepository) GetLastUpdated() (*models.Service, error) {
-	var last models.Service
-
-	if err := r.db.Where("event = ?", "service.updated").Order("created_at desc").First(&last).Error; err != nil {
-		return nil, err
-	}
-
-	return &last, nil
 }
 
 func (r *gormServiceRepository) GetByID(id uint) (*models.Service, error) {
