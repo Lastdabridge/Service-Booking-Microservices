@@ -8,7 +8,6 @@ import (
 )
 
 type SpecialistRepository interface {
-	GetLastUpdated() (*models.Specialist, error)
 	Delete(uint) error
 	GetByID(id uint) (*models.Specialist, error)
 	CheckService(specialistID uint, ServiceID uint) (*models.SpecialistService, error)
@@ -88,16 +87,6 @@ func (r *gormSpecialistRepository) WithDB(db *gorm.DB) SpecialistRepository {
 
 func (r *gormSpecialistRepository) Delete(id uint) error {
 	return r.db.Where("specialist_id = ?", id).Delete(&models.Specialist{}).Error
-}
-
-func (r *gormSpecialistRepository) GetLastUpdated() (*models.Specialist, error) {
-	var last models.Specialist
-
-	if err := r.db.Where("event = specialist.updated").Order("created_at desc").First(&last).Error; err != nil {
-		return nil, err
-	}
-
-	return &last, nil
 }
 
 func (r *gormSpecialistRepository) GetByID(id uint) (*models.Specialist, error) {
