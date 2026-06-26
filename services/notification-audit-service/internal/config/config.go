@@ -27,11 +27,11 @@ func Load() *Config {
 		log.Println("no .env file found, reading environment variables directly")
 	}
 
-	config := &Config{
+	return &Config{
 		HTTPPort:					getEnv("HTTP_PORT", "8084"),
-		DatabaseURL:				getEnv("DATABASE_URL", "host=localhost user=postgres password=4545 dbname=notification_db port=5432 sslmode=disable"),
+		DatabaseURL:  				requireEnv("DATABASE_URL"),
 		KafkaBroker:				getEnv("KAFKA_BROKER", "localhost:9092"),
-		KafkaGroupID: getEnv("KAFKA_GROUP_ID", "notification-audit-service"),
+		KafkaGroupID: 				getEnv("KAFKA_GROUP_ID", "notification-audit-service"),
 
 		TopicUsersEvents:			getEnv("TOPIC_USERS_EVENTS", "users.events"),
 		TopicCatalogEvents:			getEnv("TOPIC_CATALOG_EVENTS", "catalog.events"),
@@ -41,23 +41,19 @@ func Load() *Config {
 
 		TopicAuditEvents:			getEnv("TOPIC_AUDIT_EVENTS", "audit.events"),
 	}
-
-	config.DatabaseURL = requireEnv("DATABASE_URL")
- 
-	return config
 }
 
 func getEnv(key, defaultValue string) string {
-	if v := os.Getenv(key); v != "" {
-		return v
+	if env := os.Getenv(key); env != "" {
+		return env
 	}
 	return defaultValue
 }
 
 func requireEnv(key string) string {
-	v := os.Getenv(key)
-	if v == "" {
-		log.Fatalf("обязательная переменная окружения %s не задана", key)
+	env := os.Getenv(key)
+	if env == "" {
+		log.Fatalf("required environment variable %s is not set", key)
 	}
-	return v
+	return env
 }

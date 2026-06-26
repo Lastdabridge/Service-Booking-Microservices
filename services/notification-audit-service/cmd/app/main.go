@@ -21,34 +21,34 @@ import (
 
 func main() {
 	cfg := config.Load()
-	log.Println("[STARTUP] конфиг загружен")
+	log.Println("[STARTUP] configuration loaded successfully")
 
 	db, err := gorm.Open(postgres.Open(cfg.DatabaseURL), &gorm.Config{})
 	if err != nil {
-		log.Fatalf("[STARTUP] ошибка подключения к БД: %v", err)
+		log.Fatalf("[STARTUP] failed to connect to database: %v", err)
 	}
-	log.Println("[STARTUP] база данных подключена")
+	log.Println("[STARTUP] database connected successfully")
 
 	if err := db.AutoMigrate(&model.Notification{}, &model.AuditLog{}); err != nil {
-		log.Fatalf("[STARTUP] ошибка миграции: %v", err)
+		log.Fatalf("[STARTUP] database migration failed: %v", err)
 	}
-	log.Println("[STARTUP] миграции выполнены")
+	log.Println("[STARTUP] database migrations applied successfully")
 
 	notifRepo := repository.NewNotificationRepository(db)
 	auditRepo := repository.NewAuditRepository(db)
 
-	kafka.InitWriter(cfg.KafkaBroker)
+	kafka.InitWriter(cfg)
 	defer kafka.CloseWriter()
 
-	publisher := kafka.NewProducer()
+	producer := kafka.NewProducer(cfg)
 
-	notifSvc := service.NewNotificationService(notifRepo, publisher)
-	auditSvc := service.NewAuditService(auditRepo, publisher)
+	notifSvc := service.NewNotificationService(notifRepo, producer)
+	auditSvc := service.NewAuditService(auditRepo, producer)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	kafka.StartConsumers(ctx, cfg.KafkaBroker, cfg.KafkaGroupID, notifSvc, auditSvc)
+	kafka.StartConsumers(ctx, cfg, notifSvc, auditSvc)
 
 	notifHandler := transport.NewNotificationHandler(notifSvc)
 	auditHandler := transport.NewAuditHandler(auditSvc)
@@ -60,9 +60,9 @@ func main() {
 	}
 
 	go func() {
-		log.Printf("[STARTUP] HTTP сервер запущен на :%s", cfg.HTTPPort)
+		log.Printf("[STARTUP] HTTP server is running on port :%s", cfg.HTTPPort)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("[STARTUP] ошибка HTTP сервера: %v", err)
+			log.Fatalf("[STARTUP] HTTP server error: %v", err)
 		}
 	}()
 
@@ -70,7 +70,7 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
-	log.Println("[SHUTDOWN] получен сигнал завершения...")
+	log.Println("[SHUTDOWN] shutdown signal received, initiating graceful shutdown...")
 
 	cancel()
 
@@ -78,8 +78,8 @@ func main() {
 	defer shutdownCancel()
 
 	if err := srv.Shutdown(shutdownCtx); err != nil {
-		log.Printf("[SHUTDOWN] ошибка при остановке HTTP сервера: %v", err)
+		log.Printf("[SHUTDOWN] HTTP server shutdown error: %v", err)
 	}
 
-	log.Println("[SHUTDOWN] сервис остановлен")
+	log.Println("[SHUTDOWN] service stopped completely")
 }

@@ -33,20 +33,20 @@ type AuditLoggedEvent struct {
 }
 
 // публикуем в audit.events, когда обнаружена подозрительная активность (access.denied из gateway.events)
-type SuspiciousActivityEvent struct {
-	Event     string `json:"event"`      
-	ActorID   uint  `json:"actor_id"`   
-	Path      string `json:"path"`       
-	Method    string `json:"method"`     
-	Reason    string `json:"reason"`     
-	CreatedAt string `json:"created_at"`
-}
+// type SuspiciousActivityEvent struct {
+// 	Event     string `json:"event"`      
+// 	ActorID   uint  `json:"actor_id"`   
+// 	Path      string `json:"path"`       
+// 	Method    string `json:"method"`     
+// 	Reason    string `json:"reason"`     
+// 	CreatedAt string `json:"created_at"`
+// }
 
 // универсальная структура для входящих событий
 type KafkaEvent struct {
 	Event string `json:"event"` 
 
-	// Поля из users.events)
+	// Поля из users.events
 	UserID uint   `json:"user_id"`
 	Email  string `json:"email"`
 	Role   string `json:"role"`
@@ -63,8 +63,8 @@ type KafkaEvent struct {
 	Title string `json:"title"`
 
 	// Поля из gateway.events
-	Path   string `json:"path"`
-	Method string `json:"method"`
+	// Path   string `json:"path"`
+	// Method string `json:"method"`
 
 	CreatedAt string `json:"created_at"`
 }

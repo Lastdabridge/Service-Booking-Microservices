@@ -1,8 +1,8 @@
 package kafka
  
-import "time"
+// import "time"
  
-const (
-	SuspiciousThreshold int64 = 5
-	SuspiciousWindow = 5 * time.Minute
-)
+// const (
+// 	SuspiciousThreshold int64 = 5
+// 	SuspiciousWindow = 5 * time.Minute
+// )

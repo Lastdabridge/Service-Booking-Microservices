@@ -19,8 +19,6 @@ func NewNotificationHandler(svc service.NotificationService) *NotificationHandle
 
 func (h *NotificationHandler) GetMyNotifs(c *gin.Context) {
 	userID := c.MustGet("userID").(uint)
-	// C.Request.Context() - контекст HTTP-запроса. Если клиент закроет соединение до ответа,
-	// этот ctx отменится, и запрос к БД внутри сервиса прервётся.
 	notifications, err := h.svc.GetMyNotifications(c.Request.Context(), userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

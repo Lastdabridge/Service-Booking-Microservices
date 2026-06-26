@@ -5,9 +5,9 @@ import (
 )
 
 func SetupRouter(notifHandler *NotificationHandler, auditHandler *AuditHandler) *gin.Engine {
-	r := gin.Default()
+	router := gin.Default()
 
-	auth := r.Group("/", RequireAuth())
+	auth := router.Group("/", RequireAuth())
 	{
 		notifications := auth.Group("/notifications")
 		{
@@ -22,5 +22,5 @@ func SetupRouter(notifHandler *NotificationHandler, auditHandler *AuditHandler) 
 		}
 	}
 
-	return r
+	return router
 }

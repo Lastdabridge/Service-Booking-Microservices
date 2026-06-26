@@ -5,41 +5,34 @@ import (
 	"encoding/json"
 	"log"
 
+	"github.com/Veoler/notification-audit-service/internal/config"
 	"github.com/Veoler/notification-audit-service/internal/dto"
 	"github.com/Veoler/notification-audit-service/internal/model"
 	"github.com/Veoler/notification-audit-service/internal/service"
 	"github.com/segmentio/kafka-go"
 )
 
-const (
-	TopicUsersEvents         = "users.events"
-	TopicCatalogEvents       = "catalog.events"
-	TopicBookingEvents       = "booking.events"
-	TopicGatewayEvents       = "gateway.events"
-)
-
-const eventTypeSuspiciousDetected = "suspicious.activity.detected"
+// const eventTypeSuspiciousDetected = "suspicious.activity.detected"
 
 func StartConsumers(
 	ctx context.Context,
-	broker string,
-	groupID string,
+	cfg *config.Config,
 	notifSvc service.NotificationService,
 	auditSvc service.AuditService,
 ) {
 	topics := []string{
-		TopicUsersEvents,
-		TopicCatalogEvents,
-		TopicBookingEvents,
-		TopicNotificationsEvents,
-		TopicGatewayEvents,
+		cfg.TopicUsersEvents,
+		cfg.TopicCatalogEvents,
+		cfg.TopicBookingEvents,
+		cfg.TopicNotificationsEvents,
+		cfg.TopicGatewayEvents,
 	}
 
 	for _, topic := range topics {
 		reader := kafka.NewReader(kafka.ReaderConfig{
-			Brokers:  []string{broker},
+			Brokers:  []string{cfg.KafkaBroker},
 			Topic:    topic,
-			GroupID:  groupID,
+			GroupID:  cfg.KafkaGroupID,
 			MinBytes: 1,
 			MaxBytes: 10e6,
 		})
@@ -68,7 +61,7 @@ func StartConsumers(
 					continue
 				}
 
-				handleMessage(ctx, t, event, string(msg.Value), notifSvc, auditSvc)
+				handleMessage(ctx, t, event, string(msg.Value), cfg, notifSvc, auditSvc)
 
 				if err := r.CommitMessages(ctx, msg); err != nil {
 					log.Printf("[KAFKA CONSUMER] failed to commit message from %s: %v", t, err)
@@ -85,22 +78,23 @@ func handleMessage(
 	topic string,
 	event kafkadto.KafkaEvent,
 	rawPayload string,
+	cfg *config.Config,
 	notifSvc service.NotificationService,
 	auditSvc service.AuditService,
 ) {
-	saveAuditLog(ctx, topic, event, rawPayload, auditSvc)
-
-	if topic == TopicNotificationsEvents {
+	saveAuditLog(ctx, topic, event, rawPayload, cfg, auditSvc)
+	
+	if topic == cfg.TopicNotificationsEvents {
 		log.Printf("[KAFKA CONSUMER] internal event %s received — logging to audit only", event.Event)
 		return
 	}
 
-	if event.Event == "access.denied" {
-		handleAccessDenied(ctx, event, auditSvc)
-		return
-	}
+	// if event.Event == "access.denied" {
+	// 	handleAccessDenied(ctx, event, cfg, auditSvc)
+	// 	return
+	// }
 
-	maybeCreateNotification(ctx, event, notifSvc)
+	maybeCreateNotification(ctx, event, cfg, notifSvc)
 }
 
 func saveAuditLog(
@@ -108,6 +102,7 @@ func saveAuditLog(
 	topic string,
 	event kafkadto.KafkaEvent,
 	rawPayload string,
+	cfg *config.Config,
 	auditSvc service.AuditService,
 ) (*model.AuditLog, error) {
 	var actorID uint
@@ -127,7 +122,7 @@ func saveAuditLog(
 	entry, err := auditSvc.CreateAuditLog(ctx, model.AuditLogCreatedRequest{
 		EventType:     event.Event,
 		EntityType:    entityTypeFromEvent(event.Event),
-		SourceService: sourceServiceFromTopic(topic),
+		SourceService: sourceServiceFromTopic(topic, cfg),
 		Payload:       rawPayload,
 		ActorID:       actorID,
 		EntityID:      entityID,
@@ -141,49 +136,51 @@ func saveAuditLog(
 	return entry, nil
 }
 
-func handleAccessDenied(ctx context.Context, event kafkadto.KafkaEvent, auditSvc service.AuditService) {
-	if event.UserID == 0 {
-		log.Printf("[SECURITY] access.denied from unknown user: path=%s", event.Path)
-		PublishSuspiciousActivity(ctx, 0, event.Path, event.Method, "access denied: unknown user")
-		return
-	}
+// func handleAccessDenied(ctx context.Context, event kafkadto.KafkaEvent, cfg *config.Config, auditSvc service.AuditService) {
+// 	if event.UserID == 0 {
+// 		log.Printf("[SECURITY] access.denied from unknown user: path=%s", event.Path)
+// 		PublishSuspiciousActivity(ctx, cfg, 0, event.Path, event.Method, "access denied: unknown user")
+// 		return
+// 	}
 
-	isSuspicious, err := auditSvc.IsSuspicious(ctx, event.UserID, "access.denied", SuspiciousWindow, SuspiciousThreshold)
-	if err != nil {
-		log.Printf("[SECURITY] failed to check suspicious activity for user_id=%d: %v", event.UserID, err)
-		return
-	}
+// 	isSuspicious, err := auditSvc.IsSuspicious(ctx, event.UserID, "access.denied", SuspiciousWindow, SuspiciousThreshold)
+// 	if err != nil {
+// 		log.Printf("[SECURITY] failed to check suspicious activity for user_id=%d: %v", event.UserID, err)
+// 		return
+// 	}
 
-	if !isSuspicious {
-		return
-	}
+// 	if !isSuspicious {
+// 		return
+// 	}
 
-	alreadyAlerted, err := auditSvc.IsSuspicious(ctx, event.UserID, eventTypeSuspiciousDetected, SuspiciousWindow, 1)
-	if err != nil {
-		log.Printf("[SECURITY] failed to check existing alert for user_id=%d: %v", event.UserID, err)
-		return
-	}
-	if alreadyAlerted {
-		log.Printf("[SECURITY] alert for user_id=%d already sent within current window, skipping", event.UserID)
-		return
-	}
+// 	alreadyAlerted, err := auditSvc.IsSuspicious(ctx, event.UserID, eventTypeSuspiciousDetected, SuspiciousWindow, 1)
+// 	if err != nil {
+// 		log.Printf("[SECURITY] failed to check existing alert for user_id=%d: %v", event.UserID, err)
+// 		return
+// 	}
+// 	if alreadyAlerted {
+// 		log.Printf("[SECURITY] alert for user_id=%d already sent within current window, skipping", event.UserID)
+// 		return
+// 	}
 
-	log.Printf("[SECURITY] SUSPICIOUS ACTIVITY DETECTED: user_id=%d exceeded %d attempts within %v",
-		event.UserID, SuspiciousThreshold, SuspiciousWindow)
+// 	log.Printf("[SECURITY] SUSPICIOUS ACTIVITY DETECTED: user_id=%d exceeded %d attempts within %v",
+// 		event.UserID, SuspiciousThreshold, SuspiciousWindow)
 
-	PublishSuspiciousActivity(ctx, event.UserID, event.Path, event.Method,
-		"multiple access denied attempts detected")
+// 	PublishSuspiciousActivity(ctx, cfg, event.UserID, event.Path, event.Method,
+// 		"multiple access denied attempts detected")
 
-	_, _ = auditSvc.CreateAuditLog(ctx, model.AuditLogCreatedRequest{
-		EventType:     eventTypeSuspiciousDetected,
-		EntityType:    "security",
-		SourceService: "notification-audit-service",
-		Payload:       "",
-		ActorID:       event.UserID,
-	})
-}
+// 	if _, err = auditSvc.CreateAuditLog(ctx, model.AuditLogCreatedRequest{
+// 		EventType:     eventTypeSuspiciousDetected,
+// 		EntityType:    "security",
+// 		SourceService: "notification-audit-service",
+// 		Payload:       "",
+// 		ActorID:       event.UserID,
+// 	}); err != nil {
+// 		log.Printf("[SECURITY] failed to save suspicious activity audit log for user_id=%d: %v", event.UserID, err)
+// 	}
+// }
 
-func maybeCreateNotification(ctx context.Context, event kafkadto.KafkaEvent, notifSvc service.NotificationService) {
+func maybeCreateNotification(ctx context.Context, event kafkadto.KafkaEvent, cfg *config.Config, notifSvc service.NotificationService) {
 	var req model.NotificationCreateRequest
 
 	switch event.Event {
@@ -225,7 +222,7 @@ func maybeCreateNotification(ctx context.Context, event kafkadto.KafkaEvent, not
 
 	if req.UserID == 0 {
 		log.Printf("[KAFKA CONSUMER] event %s missing user_id or client_id", event.Event)
-		NewProducer().PublishNotificationFailed(ctx, 0, event.Event, "missing user_id or client_id")
+		NewProducer(cfg).PublishNotificationFailed(ctx, 0, event.Event, "missing user_id or client_id")
 		return
 	}
 
@@ -239,17 +236,17 @@ func maybeCreateNotification(ctx context.Context, event kafkadto.KafkaEvent, not
 		req.UserID, event.Event, notif.ID)
 }
 
-func sourceServiceFromTopic(topic string) string {
+func sourceServiceFromTopic(topic string, cfg *config.Config) string {
 	switch topic {
-	case TopicUsersEvents:
+	case cfg.TopicUsersEvents:
 		return "gateway-auth-service"
-	case TopicCatalogEvents:
+	case cfg.TopicCatalogEvents:
 		return "catalog-service"
-	case TopicBookingEvents:
+	case cfg.TopicBookingEvents:
 		return "booking-service"
-	case TopicNotificationsEvents:
+	case cfg.TopicNotificationsEvents:
 		return "notification-audit-service"
-	case TopicGatewayEvents:
+	case cfg.TopicGatewayEvents:
 		return "gateway-auth-service"
 	default:
 		return topic

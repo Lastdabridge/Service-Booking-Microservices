@@ -8,16 +8,11 @@ import (
 	"net"
 	"strconv"
 	"time"
-
+	
+	"github.com/Veoler/notification-audit-service/internal/config"
 	"github.com/Veoler/notification-audit-service/internal/model"
 	"github.com/Veoler/notification-audit-service/internal/dto"
 	"github.com/segmentio/kafka-go"
-)
-
-
-const (
-	TopicNotificationsEvents = "notifications.events"
-	TopicAuditEvents         = "audit.events"
 )
 
 func createTopics(broker string, topics []string) {
@@ -59,11 +54,11 @@ func createTopics(broker string, topics []string) {
 
 var kafkaWriter *kafka.Writer
 
-func InitWriter(broker string) {
-	createTopics(broker, []string{TopicNotificationsEvents, TopicAuditEvents})
-
+func InitWriter(cfg *config.Config) {
+	createTopics(cfg.KafkaBroker, []string{cfg.TopicNotificationsEvents, cfg.TopicAuditEvents})
+	
 	kafkaWriter = &kafka.Writer{
-		Addr:         kafka.TCP(broker),
+		Addr:         kafka.TCP(cfg.KafkaBroker),
 		Balancer:     &kafka.LeastBytes{},
 		WriteTimeout: 10 * time.Second,
 	}
@@ -79,11 +74,13 @@ func CloseWriter() {
 	}
 }
 
-type Producer struct{}
+type Producer struct{
+	cfg *config.Config
+}
  
 // создаёт объект-публикатор для передачи в конструкторы сервисов.
-func NewProducer() *Producer {
-	return &Producer{}
+func NewProducer(cfg *config.Config) *Producer {
+	return &Producer{cfg: cfg}
 }
 
 func (p *Producer) PublishNotificationCreated(ctx context.Context, notif *model.Notification, sourceEvent string) {
@@ -96,7 +93,7 @@ func (p *Producer) PublishNotificationCreated(ctx context.Context, notif *model.
 		CreatedAt:      time.Now().Format(time.RFC3339),
 	}
 
-	if err := publish(ctx, TopicNotificationsEvents, event); err != nil {
+	if err := publish(ctx, p.cfg.TopicNotificationsEvents, event); err != nil {
 		log.Printf("[KAFKA PRODUCER] failed to publish notification.created: %v", err)
 	}
 }
@@ -109,7 +106,7 @@ func (p *Producer) PublishNotificationRead(ctx context.Context, notif *model.Not
 		CreatedAt:      time.Now().Format(time.RFC3339),
 	}
 
-	if err := publish(ctx, TopicNotificationsEvents, event); err != nil {
+	if err := publish(ctx, p.cfg.TopicNotificationsEvents, event); err != nil {
 		log.Printf("[KAFKA PRODUCER] failed to publish notification.read: %v", err)
 	}
 }
@@ -123,7 +120,7 @@ func (p *Producer) PublishNotificationFailed(ctx context.Context, userID uint, s
 		CreatedAt:   time.Now().Format(time.RFC3339),
 	}
 
-	if err := publish(ctx, TopicNotificationsEvents, event); err != nil {
+	if err := publish(ctx, p.cfg.TopicNotificationsEvents, event); err != nil {
 		log.Printf("[KAFKA PRODUCER] failed to publish notification.failed: %v", err)
 	}
 }
@@ -137,26 +134,26 @@ func (p *Producer) PublishAuditLogged(ctx context.Context, auditLog *model.Audit
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
 
-	if err := publish(ctx, TopicAuditEvents, event); err != nil {
+	if err := publish(ctx, p.cfg.TopicAuditEvents, event); err != nil {
 		log.Printf("[KAFKA PRODUCER] failed to publish audit.logged: %v", err)
 	}
 }
 
 // Вызывается когда получаем access.denied из gateway.events
-func PublishSuspiciousActivity(ctx context.Context, actorID uint, path, method, reason string) {
-	event := kafkadto.SuspiciousActivityEvent{
-		Event:     "suspicious.activity.detected",
-		ActorID:   actorID,
-		Path:      path,
-		Method:    method,
-		Reason:    reason,
-		CreatedAt: time.Now().Format(time.RFC3339),
-	}
+// func PublishSuspiciousActivity(ctx context.Context, cfg *config.Config, actorID uint, path, method, reason string) {
+// 	event := kafkadto.SuspiciousActivityEvent{
+// 		Event:     "suspicious.activity.detected",
+// 		ActorID:   actorID,
+// 		Path:      path,
+// 		Method:    method,
+// 		Reason:    reason,
+// 		CreatedAt: time.Now().Format(time.RFC3339),
+// 	}
 
-	if err := publish(ctx, TopicAuditEvents, event); err != nil {
-		log.Printf("[KAFKA PRODUCER] failed to publish suspicious.activity.detected: %v", err)
-	}
-}
+// 	if err := publish(ctx, cfg.TopicAuditEvents, event); err != nil {
+// 		log.Printf("[KAFKA PRODUCER] failed to publish suspicious.activity.detected: %v", err)
+// 	}
+// }
 
 // вспомогательная функция, отправляет любое событие в указанный топик.
 func publish(ctx context.Context, topic string, payload any) error {
