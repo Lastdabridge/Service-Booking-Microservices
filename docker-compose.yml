@@ -21,6 +21,28 @@ services:
       timeout: 5s
       retries: 10
 
+  notification-audit-service-db:
+    image: postgres:17
+    container_name: notification-audit-service-db
+    restart: unless-stopped
+ 
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 4545
+      POSTGRES_DB: notification_audit_service
+ 
+    ports:
+      - "5434:5432"
+ 
+    volumes:
+      - notification-audit-service-data:/var/lib/postgresql/data
+ 
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   kafka:
     image: apache/kafka:3.7.0
     container_name: kafka
@@ -112,6 +134,25 @@ services:
 
     restart: unless-stopped
 
+  notification-audit-service:
+    build:
+      context: ./services/notification-audit-service
+ 
+    container_name: notification-audit-service
+ 
+    ports:
+      - "8084:8084"
+ 
+    env_file:
+      - ./services/notification-audit-service/.env
+ 
+    depends_on:
+      - notification-audit-service-db
+      - kafka
+ 
+    restart: unless-stopped
+ 
 volumes:
   auth-service-db-data:
   kafka-data:
+  notification-audit-service-db-data:

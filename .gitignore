@@ -17,3 +17,9 @@ vendor/
 
 # Docker
 *.log
+
+Shpora.md
+Readme.md
+.env
+.env.example
+
