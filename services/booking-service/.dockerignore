@@ -1,0 +1,25 @@
+# Среда разработки и кэш Go
+.idea/
+.vscode/
+*.bin
+*.exe
+*.out
+/vendor/
+
+# Локальные собранные бинарники (чтобы не тащить чужую архитектуру в Docker)
+/main
+/app
+
+# Логи и временные файлы
+*.log
+.log
+tmp/
+
+# Секретные данные
+.env
+.env.*
+! .env.example
+
+# Git
+.git
+.gitignore
