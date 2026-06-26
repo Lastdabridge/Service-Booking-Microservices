@@ -113,7 +113,7 @@ services:
     restart: unless-stopped
 
   booking-service-db:
-    image: postgres:18-alpine
+    image: postgres:17-alpine
     container_name: booking_db
     env_file:
       - services/booking-service/.env
@@ -126,10 +126,10 @@ services:
     volumes:
       - booking-service-db-data:/var/lib/postgresql/data
     healthcheck:
-    test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
-    interval: 5s
-    timeout: 5s
-    retries: 5
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   booking-service:
     build:
@@ -137,18 +137,18 @@ services:
       dockerfile: Dockerfile
     container_name: booking
     ports:
-      - "8080:8080"
+      - "8082:8080"
     env_file:
       - services/booking-service/.env
     environment:
-      DB_HOST: booking-db
+      DB_HOST: booking-service-db
       DB_PORT: ${DB_PORT}
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
       DB_NAME: ${DB_NAME}
       DB_SSLMODE: disable
     depends_on:
-      booking-db:
+      booking-service-db:
         condition: service_healthy
 
 volumes:
