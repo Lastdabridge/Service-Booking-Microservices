@@ -95,7 +95,7 @@ func (s *appointmentService) CreateAppointment(req dto.AppointmentCreateRequest)
 	if err != nil {
 		return nil, err
 	}
-	if err = s.Producer.PublishBookingEvent(*appointment, "booking.create"); err != nil {
+	if err = s.Producer.PublishBookingEvent(*appointment, "booking.created"); err != nil {
 		return nil, err
 	}
 	return appointment, err
@@ -166,7 +166,7 @@ func (s *appointmentService) DeleteAppointmentByID(appointmentID uint) error {
 		return err
 	}
 
-	if err = s.Producer.PublishBookingEvent(*appointment, "booking.canceled"); err != nil {
+	if err = s.Producer.PublishBookingEvent(*appointment, "booking.cancelled"); err != nil {
 		return err
 	}
 
