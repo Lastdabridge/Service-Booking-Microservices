@@ -108,10 +108,44 @@ services:
       - ./services/gateway/.env
 
     depends_on:
-      - auth-service
+      - booking-service
 
     restart: unless-stopped
+
+  booking-service-db:
+    image: postgres:17-alpine
+    container_name: booking_db
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=1234
+      - POSTGRES_DB=booking-service
+    ports:
+      - "5432:5432"
+    volumes:
+      - booking-service-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d booking-service"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  booking-service:
+    build:
+      context: ./services/booking-service
+      dockerfile: Dockerfile
+    container_name: booking
+    ports:
+      - "8082:8080"
+    env_file:
+      - services/booking-service/.env
+    environment:
+      DB_HOST: booking-service-db
+      DB_SSLMODE: disable
+    depends_on:
+      booking-service-db:
+        condition: service_healthy
 
 volumes:
   auth-service-db-data:
   kafka-data:
+  booking-service-db-data:
