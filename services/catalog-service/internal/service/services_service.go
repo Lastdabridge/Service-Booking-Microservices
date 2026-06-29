@@ -5,8 +5,8 @@ import (
 	"catalog-service/internal/dto"
 	"catalog-service/internal/models"
 	"catalog-service/internal/repository"
+	"catalog-service/internal/validation"
 	"context"
-	"errors"
 )
 
 type ServicesService interface {
@@ -14,20 +14,32 @@ type ServicesService interface {
 
 	CreateService(c context.Context, req dto.CreateServiceRequest) (*models.Service, error)
 
+	CreateSpecServ(c context.Context, req dto.CreateSpecServ) (*models.SpecialistService, error)
+
 	UpdateService(c context.Context, id uint, req dto.UpdateServiceRequest) (*models.Service, error)
 
-	DeleteService(id uint) error
+	DeleteService(c context.Context, id uint) error
+
+	DeleteSpecServ(c context.Context, id uint) error
 }
 
 type servicesServise struct {
-	service  repository.ServicesRepository
-	producer *broker.Producer
+	specialist repository.SpecialistRepository
+	service    repository.ServicesRepository
+	producer   *broker.Producer
+	validator  validation.Validator
 }
 
-func NewServicesService(service repository.ServicesRepository, producer *broker.Producer) ServicesService {
+func NewServicesService(
+	specialist repository.SpecialistRepository,
+	service repository.ServicesRepository,
+	producer *broker.Producer,
+) ServicesService {
 	return &servicesServise{
-		service:  service,
-		producer: producer,
+		specialist: specialist,
+		service:    service,
+		producer:   producer,
+		validator:  validation.NewValidator(),
 	}
 }
 
@@ -40,6 +52,10 @@ func (s *servicesServise) GetServices() ([]models.Service, error) {
 }
 
 func (s *servicesServise) CreateService(c context.Context, req dto.CreateServiceRequest) (*models.Service, error) {
+	if err := s.validator.ValidateServiceCreate(req); err != nil {
+		return nil, err
+	}
+
 	service := &models.Service{
 		Title:           req.Title,
 		Description:     req.Description,
@@ -60,7 +76,41 @@ func (s *servicesServise) CreateService(c context.Context, req dto.CreateService
 	return service, nil
 }
 
+func (s *servicesServise) CreateSpecServ(c context.Context, req dto.CreateSpecServ) (*models.SpecialistService, error) {
+	if err := s.validator.ValidateCreateSpecServ(req); err != nil {
+		return nil, err
+	}
+
+	_, err := s.service.GetByID(req.ServiceID)
+	if err != nil {
+		return nil, err
+	}
+	_, err = s.specialist.GetByID(req.SpecialistID)
+	if err != nil {
+		return nil, err
+	}
+
+	specServ := &models.SpecialistService{
+		ServiceID:    req.ServiceID,
+		SpecialistID: req.SpecialistID,
+	}
+
+	if err := s.service.CreateSpecServ(specServ); err != nil {
+		return nil, err
+	}
+
+	if err := s.producer.Produce(c, specServ); err != nil {
+		return nil, err
+	}
+
+	return specServ, nil
+}
+
 func (s *servicesServise) UpdateService(c context.Context, id uint, req dto.UpdateServiceRequest) (*models.Service, error) {
+	if err := s.validator.ValidateServiceUpdate(req); err != nil {
+		return nil, err
+	}
+
 	services, err := s.service.GetByID(id)
 	if err != nil {
 		return nil, err
@@ -91,12 +141,37 @@ func (s *servicesServise) UpdateService(c context.Context, id uint, req dto.Upda
 	return services, nil
 }
 
-func (s *servicesServise) DeleteService(id uint) error {
+func (s *servicesServise) DeleteService(c context.Context, id uint) error {
 	_, err := s.service.GetByID(id)
+
 	if err != nil {
-		return errors.New("услуги с таким id не существует")
+		return err
 	}
 	if err := s.service.DeleteService(id); err != nil {
+		return err
+	}
+
+	event := broker.ServiceDelete{
+		ID: id,
+	}
+	if err := s.producer.Produce(c, event); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *servicesServise) DeleteSpecServ(c context.Context, id uint) error {
+	_, err := s.service.GetByIDSpecServ(id)
+	if err != nil {
+		return err
+	}
+	if err := s.service.DeleteSpecServ(id); err != nil {
+		return err
+	}
+
+	event := broker.SpecialistServiceDelete{ID: id}
+	if err := s.producer.Produce(c, event); err != nil {
 		return err
 	}
 

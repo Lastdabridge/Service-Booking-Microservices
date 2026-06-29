@@ -3,10 +3,10 @@ package service
 import (
 	"catalog-service/internal/broker"
 	"catalog-service/internal/dto"
-	models "catalog-service/internal/models"
+	"catalog-service/internal/models"
 	"catalog-service/internal/repository"
+	"catalog-service/internal/validation"
 	"context"
-	"time"
 )
 
 type SpecialistService interface {
@@ -20,8 +20,9 @@ type SpecialistService interface {
 }
 
 type specialistService struct {
-	service  repository.SpecialistRepository
-	producer *broker.Producer
+	service   repository.SpecialistRepository
+	producer  *broker.Producer
+	validator validation.Validator
 }
 
 func NewSpecialistService(
@@ -29,12 +30,17 @@ func NewSpecialistService(
 	producer *broker.Producer,
 ) SpecialistService {
 	return &specialistService{
-		service:  service,
-		producer: producer,
+		service:   service,
+		producer:  producer,
+		validator: validation.NewValidator(),
 	}
 }
 
 func (s *specialistService) CreateSpecialist(c context.Context, req dto.SpecialistCreateRequest) (*models.Specialist, error) {
+	if err := s.validator.ValidateSpecialistCreate(req); err != nil {
+		return nil, err
+	}
+
 	spec := &models.Specialist{
 		Name:        req.Name,
 		Description: req.Description,
@@ -53,6 +59,10 @@ func (s *specialistService) CreateSpecialist(c context.Context, req dto.Speciali
 }
 
 func (s *specialistService) UpdateSpecialist(c context.Context, id uint, req dto.SpecialistUpdateRequest) (*models.Specialist, error) {
+	if err := s.validator.ValidateSpecialistUpdate(req); err != nil {
+		return nil, err
+	}
+
 	spec, err := s.service.GetByID(id)
 	if err != nil {
 		return nil, err
@@ -79,16 +89,12 @@ func (s *specialistService) UpdateSpecialist(c context.Context, id uint, req dto
 }
 
 func (s *specialistService) DeleteSpecialist(c context.Context, id uint) error {
-	spec, err := s.service.GetByID(id)
+	_, err := s.service.GetByID(id)
 	if err != nil {
 		return err
 	}
 
-	event := broker.SpecialistDeleted{
-		ID:        id,
-		Name:      spec.Name,
-		Timestamp: time.Now().UTC(), //
-	}
+	event := broker.SpecialistDelete{ID: id}
 
 	if err := s.service.DeleteSpecialist(id); err != nil {
 		return err

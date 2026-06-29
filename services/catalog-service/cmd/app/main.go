@@ -23,16 +23,22 @@ func main() {
 
 	kafkaCfg := config.NewKafkaConfig()
 
-	producer := broker.NewProducer(kafkaCfg, "services")
-	defer producer.Close()
+	services := broker.NewProducer(kafkaCfg, "services")
+	defer services.Close()
+
+	specialist := broker.NewProducer(kafkaCfg, "specialist")
+	defer specialist.Close()
+
+	schedules := broker.NewProducer(kafkaCfg, "schedules")
+	defer schedules.Close()
 
 	serviceRepo := repository.NewServicesRepositry(db)
 	specialistRepo := repository.NewSpecialistRepository(db)
 	scheduleRepo := repository.NewSchedulesRepository(db)
 
-	serivceService := service.NewServicesService(serviceRepo, producer)
-	specialistService := service.NewSpecialistService(specialistRepo, producer)
-	scheduleService := service.NewSchedulesService(scheduleRepo, producer)
+	serivceService := service.NewServicesService(specialistRepo, serviceRepo, services)
+	specialistService := service.NewSpecialistService(specialistRepo, specialist)
+	scheduleService := service.NewSchedulesService(scheduleRepo, schedules)
 
 	router := gin.Default()
 	transport.RegisterRoutes(router, serivceService, specialistService, scheduleService)

@@ -2,6 +2,7 @@ package transport
 
 import (
 	"catalog-service/internal/dto"
+	"catalog-service/internal/middleware"
 	"catalog-service/internal/service"
 	"net/http"
 	"strconv"
@@ -19,11 +20,15 @@ func NewServicesHandler(service service.ServicesService) *ServicesHandler {
 
 func (h *ServicesHandler) RegisterRoutes(r *gin.Engine) {
 	services := r.Group("/service")
+	services.GET("", h.GetAll)
+
+	services.POST("", h.CreateService)
+	services.PATCH("/:id", h.UpdateService)
+	services.DELETE("/:id", h.DeleteService)
+	services.POST("/service-specialist/", h.CreateSpecServ)
+	services.DELETE("/service-specialist/:id", h.DeleteSpecServ)
+	services.Use(middleware.RoleMiddleware("admin"))
 	{
-		services.GET("", h.GetAll)
-		services.POST("", h.CreateService)
-		services.PATCH("/:id", h.UpdateService)
-		services.DELETE("/:id", h.DeleteService)
 	}
 }
 
@@ -82,10 +87,41 @@ func (h *ServicesHandler) DeleteService(c *gin.Context) {
 		return
 	}
 
-	if err = h.service.DeleteService(uint(id)); err != nil {
+	if err = h.service.DeleteService(c, uint(id)); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "удаление прошло успешно"})
+}
+
+func (h *ServicesHandler) CreateSpecServ(c *gin.Context) {
+	var req dto.CreateSpecServ
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	specServ, err := h.service.CreateSpecServ(c, req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, specServ)
+}
+
+func (h *ServicesHandler) DeleteSpecServ(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := h.service.DeleteSpecServ(c, uint(id)); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "запись удалена"})
 }

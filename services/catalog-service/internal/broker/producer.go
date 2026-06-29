@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 
 	"catalog-service/internal/config"
+
 	"github.com/segmentio/kafka-go"
 )
 
@@ -15,9 +16,10 @@ type Producer struct {
 
 func NewProducer(cfg config.KafkaConfig, topic string) *Producer {
 	w := &kafka.Writer{
-		Addr:     kafka.TCP(cfg.Brokers...),
-		Topic:    topic,
-		Balancer: &kafka.RoundRobin{},
+		Addr:                   kafka.TCP(cfg.Brokers...),
+		Topic:                  topic,
+		Balancer:               &kafka.RoundRobin{},
+		AllowAutoTopicCreation: true,
 	}
 	return &Producer{
 		writer: w,

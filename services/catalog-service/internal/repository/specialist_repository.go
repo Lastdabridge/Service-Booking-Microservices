@@ -42,7 +42,7 @@ func (r *gormSpecialistRepository) DeleteSpecialist(id uint) error {
 
 func (r *gormSpecialistRepository) GetAllSpecilist() ([]models.Specialist, error) {
 	var spec []models.Specialist
-	if err := r.db.Find(spec).Error; err != nil {
+	if err := r.db.Find(&spec).Error; err != nil {
 		return nil, err
 	}
 	return spec, nil
@@ -50,7 +50,7 @@ func (r *gormSpecialistRepository) GetAllSpecilist() ([]models.Specialist, error
 
 func (r *gormSpecialistRepository) GetByID(id uint) (*models.Specialist, error) {
 	var spec models.Specialist
-	if err := r.db.First(spec, id).Error; err != nil {
+	if err := r.db.First(&spec, id).Error; err != nil {
 		return nil, gorm.ErrRecordNotFound
 	}
 	return &spec, nil
