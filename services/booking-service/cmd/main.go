@@ -50,7 +50,7 @@ func main() {
 		serviceRepo,
 	)
 
-	if err := router.Run(); err != nil {
+	if err := router.Run(":8082"); err != nil {
 		log.Fatalf("не удалось запустить HTTP-сервер: %v", err)
 	}
 
