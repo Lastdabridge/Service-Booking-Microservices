@@ -35,7 +35,7 @@ func main() {
 	userProxy := reverseProxy(os.Getenv("USER_URL"))
 	catalogProxy := reverseProxy(os.Getenv("CATALOG_URL"))
 	bookingProxy := reverseProxy(os.Getenv("BOOKING_URL"))
-	notificationAndAuditProxy := reverseProxy(os.Getenv("NOTIFICATION-AUDIT_URL"))
+	notificationsAndAuditProxy := reverseProxy(os.Getenv("NOTIFICATIONS_AUDIT_URL"))
 
 	unprotected := r.Group("/api")
 
@@ -55,8 +55,8 @@ func main() {
 
 	protected.Any("/appointments/*path", bookingProxy)
 
-	protected.Any("/notification/*path", notificationAndAuditProxy)
-	protected.Any("/audit/*path", notificationAndAuditProxy)
+	protected.Any("/notifications/*path", notificationsAndAuditProxy)
+	protected.Any("/audit/*path", notificationsAndAuditProxy)
 
 	r.Run(":8080")
 }
