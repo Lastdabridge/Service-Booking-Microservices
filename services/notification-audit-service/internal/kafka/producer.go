@@ -78,7 +78,6 @@ type Producer struct{
 	cfg *config.Config
 }
  
-// создаёт объект-публикатор для передачи в конструкторы сервисов.
 func NewProducer(cfg *config.Config) *Producer {
 	return &Producer{cfg: cfg}
 }
@@ -139,23 +138,6 @@ func (p *Producer) PublishAuditLogged(ctx context.Context, auditLog *model.Audit
 	}
 }
 
-// Вызывается когда получаем access.denied из gateway.events
-// func PublishSuspiciousActivity(ctx context.Context, cfg *config.Config, actorID uint, path, method, reason string) {
-// 	event := kafkadto.SuspiciousActivityEvent{
-// 		Event:     "suspicious.activity.detected",
-// 		ActorID:   actorID,
-// 		Path:      path,
-// 		Method:    method,
-// 		Reason:    reason,
-// 		CreatedAt: time.Now().Format(time.RFC3339),
-// 	}
-
-// 	if err := publish(ctx, cfg.TopicAuditEvents, event); err != nil {
-// 		log.Printf("[KAFKA PRODUCER] failed to publish suspicious.activity.detected: %v", err)
-// 	}
-// }
-
-// вспомогательная функция, отправляет любое событие в указанный топик.
 func publish(ctx context.Context, topic string, payload any) error {
 	data, err := json.Marshal(payload)
 	if err != nil {

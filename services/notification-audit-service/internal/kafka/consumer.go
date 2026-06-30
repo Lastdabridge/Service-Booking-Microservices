@@ -12,8 +12,6 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-// const eventTypeSuspiciousDetected = "suspicious.activity.detected"
-
 func StartConsumers(
 	ctx context.Context,
 	cfg *config.Config,
@@ -89,11 +87,6 @@ func handleMessage(
 		return
 	}
 
-	// if event.Event == "access.denied" {
-	// 	handleAccessDenied(ctx, event, cfg, auditSvc)
-	// 	return
-	// }
-
 	maybeCreateNotification(ctx, event, cfg, notifSvc)
 }
 
@@ -136,50 +129,6 @@ func saveAuditLog(
 	return entry, nil
 }
 
-// func handleAccessDenied(ctx context.Context, event kafkadto.KafkaEvent, cfg *config.Config, auditSvc service.AuditService) {
-// 	if event.UserID == 0 {
-// 		log.Printf("[SECURITY] access.denied from unknown user: path=%s", event.Path)
-// 		PublishSuspiciousActivity(ctx, cfg, 0, event.Path, event.Method, "access denied: unknown user")
-// 		return
-// 	}
-
-// 	isSuspicious, err := auditSvc.IsSuspicious(ctx, event.UserID, "access.denied", SuspiciousWindow, SuspiciousThreshold)
-// 	if err != nil {
-// 		log.Printf("[SECURITY] failed to check suspicious activity for user_id=%d: %v", event.UserID, err)
-// 		return
-// 	}
-
-// 	if !isSuspicious {
-// 		return
-// 	}
-
-// 	alreadyAlerted, err := auditSvc.IsSuspicious(ctx, event.UserID, eventTypeSuspiciousDetected, SuspiciousWindow, 1)
-// 	if err != nil {
-// 		log.Printf("[SECURITY] failed to check existing alert for user_id=%d: %v", event.UserID, err)
-// 		return
-// 	}
-// 	if alreadyAlerted {
-// 		log.Printf("[SECURITY] alert for user_id=%d already sent within current window, skipping", event.UserID)
-// 		return
-// 	}
-
-// 	log.Printf("[SECURITY] SUSPICIOUS ACTIVITY DETECTED: user_id=%d exceeded %d attempts within %v",
-// 		event.UserID, SuspiciousThreshold, SuspiciousWindow)
-
-// 	PublishSuspiciousActivity(ctx, cfg, event.UserID, event.Path, event.Method,
-// 		"multiple access denied attempts detected")
-
-// 	if _, err = auditSvc.CreateAuditLog(ctx, model.AuditLogCreatedRequest{
-// 		EventType:     eventTypeSuspiciousDetected,
-// 		EntityType:    "security",
-// 		SourceService: "notification-audit-service",
-// 		Payload:       "",
-// 		ActorID:       event.UserID,
-// 	}); err != nil {
-// 		log.Printf("[SECURITY] failed to save suspicious activity audit log for user_id=%d: %v", event.UserID, err)
-// 	}
-// }
-
 func maybeCreateNotification(ctx context.Context, event kafkadto.KafkaEvent, cfg *config.Config, notifSvc service.NotificationService) {
 	var req model.NotificationCreateRequest
 
@@ -216,6 +165,13 @@ func maybeCreateNotification(ctx context.Context, event kafkadto.KafkaEvent, cfg
 			Message: "Ваша запись завершена. Спасибо!",
 		}
 
+	case "booking.status_changed":
+		notifReq, ok := notificationForStatusChange(event)
+		if !ok {
+			return
+		}
+		req = notifReq	
+
 	default:
 		return
 	}
@@ -234,6 +190,46 @@ func maybeCreateNotification(ctx context.Context, event kafkadto.KafkaEvent, cfg
 
 	log.Printf("[KAFKA CONSUMER] notification successfully created: user_id=%d event=%s notif_id=%d",
 		req.UserID, event.Event, notif.ID)
+}
+
+func notificationForStatusChange(event kafkadto.KafkaEvent) (model.NotificationCreateRequest, bool) {
+	switch event.Status {
+	case "completed":
+		return model.NotificationCreateRequest{
+			UserID:  event.ClientID,
+			Type:    model.NotificationTypeBookingCompleted,
+			Title:   "Запись завершена",
+			Message: "Ваша запись завершена. Спасибо!",
+		}, true
+ 
+	case "cancelled":
+		return model.NotificationCreateRequest{
+			UserID:  event.ClientID,
+			Type:    model.NotificationTypeBookingCancelled,
+			Title:   "Запись отменена",
+			Message: "Ваша запись была отменена.",
+		}, true
+ 
+	case "confirmed":
+		return model.NotificationCreateRequest{
+			UserID:  event.ClientID,
+			Type:    model.NotificationTypeBookingCancelled,
+			Title:   "Запись подтверждена",
+			Message: "Ваша запись была подтверждена.",
+		}, false
+
+	case "created":
+		return model.NotificationCreateRequest{
+			UserID:  event.ClientID,
+			Type:    model.NotificationTypeBookingCancelled,
+			Title:   "Запись создана",
+			Message: "Ваша запись была создана.",
+		}, false
+ 
+	default:
+		log.Printf("[KAFKA CONSUMER] booking.status_changed: unknow status %q, notification don't created", event.Status)
+		return model.NotificationCreateRequest{}, false
+	}
 }
 
 func sourceServiceFromTopic(topic string, cfg *config.Config) string {
