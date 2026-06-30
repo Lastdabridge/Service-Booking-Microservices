@@ -154,7 +154,7 @@ func maybeCreateNotification(ctx context.Context, event kafkadto.KafkaEvent, cfg
 			UserID:  event.ClientID,
 			Type:    model.NotificationTypeBookingCancelled,
 			Title:   "Запись отменена",
-			Message: "Ваша запись была отменена.",
+			Message: "Ваша запись отменена.",
 		}
 
 	case "booking.completed":
@@ -198,15 +198,15 @@ func notificationForStatusChange(event kafkadto.KafkaEvent) (model.NotificationC
 		return model.NotificationCreateRequest{
 			UserID:  event.ClientID,
 			Type:    model.NotificationTypeBookingCompleted,
-			Title:   "Запись завершена",
-			Message: "Ваша запись завершена. Спасибо!",
+			Title:   "Статус записи изменен",
+			Message: "Ваша запись была завершена. Спасибо!",
 		}, true
  
 	case "cancelled":
 		return model.NotificationCreateRequest{
 			UserID:  event.ClientID,
 			Type:    model.NotificationTypeBookingCancelled,
-			Title:   "Запись отменена",
+			Title:   "Статус записи изменен",
 			Message: "Ваша запись была отменена.",
 		}, true
  
@@ -214,7 +214,7 @@ func notificationForStatusChange(event kafkadto.KafkaEvent) (model.NotificationC
 		return model.NotificationCreateRequest{
 			UserID:  event.ClientID,
 			Type:    model.NotificationTypeBookingCancelled,
-			Title:   "Запись подтверждена",
+			Title:   "Статус записи изменен",
 			Message: "Ваша запись была подтверждена.",
 		}, false
 
@@ -222,7 +222,7 @@ func notificationForStatusChange(event kafkadto.KafkaEvent) (model.NotificationC
 		return model.NotificationCreateRequest{
 			UserID:  event.ClientID,
 			Type:    model.NotificationTypeBookingCancelled,
-			Title:   "Запись создана",
+			Title:   "Статус записи изменен",
 			Message: "Ваша запись была создана.",
 		}, false
  
