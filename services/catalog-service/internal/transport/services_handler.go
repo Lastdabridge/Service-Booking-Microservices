@@ -22,13 +22,13 @@ func (h *ServicesHandler) RegisterRoutes(r *gin.Engine) {
 	services := r.Group("/service")
 	services.GET("", h.GetAll)
 
-	services.POST("", h.CreateService)
-	services.PATCH("/:id", h.UpdateService)
-	services.DELETE("/:id", h.DeleteService)
-	services.POST("/service-specialist/", h.CreateSpecServ)
-	services.DELETE("/service-specialist/:id", h.DeleteSpecServ)
 	services.Use(middleware.RoleMiddleware("admin"))
 	{
+		services.POST("", h.CreateService)
+		services.PATCH("/:id", h.UpdateService)
+		services.DELETE("/:id", h.DeleteService)
+		services.POST("/service-specialist/", h.CreateSpecServ)
+		services.DELETE("/service-specialist/:id", h.DeleteSpecServ)
 	}
 }
 

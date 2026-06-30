@@ -1,17 +1,151 @@
 services:
+  auth-service-db:
+    image: postgres:17
+    container_name: auth-service-db
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 5647
+      POSTGRES_DB: auth_db
+
+    ports:
+      - "5433:5432"
+
+    volumes:
+      - auth-service-db-data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   kafka:
-    image: apache/kafka:latest
+    image: apache/kafka:3.7.0
     container_name: kafka
+    restart: unless-stopped
+
     ports:
       - "9092:9092"
+
     environment:
+      # ===== KRaft basic =====
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
-      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9091
-      KAFKA_LISTENERS: CONTROLLER://localhost:9091,HOST://0.0.0.0:9092,DOCKER://0.0.0.0:9093
-      KAFKA_ADVERTISED_LISTENERS: HOST://localhost:9092,DOCKER://kafka:9093
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,DOCKER:PLAINTEXT,HOST:PLAINTEXT
+
+      # must be stable (IMPORTANT)
+      CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
+
+      # ===== listeners =====
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_INTER_BROKER_LISTENER_NAME: DOCKER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+
+      # single node quorum
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+
+      # storage
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+
+      # required for single node
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_CREATE_TOPICS: "booking.events:1:1"
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+
+
+  kafka-ui:
+    image: kafbat/kafka-ui:latest
+    container_name: kafka-ui
+    restart: unless-stopped
+
+    ports:
+      - "8090:8080"
+
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+
+    depends_on:
+      - kafka
+
+
+  auth-service:
+    build:
+      context: ./services/auth-service
+
+    container_name: auth-service
+
+    ports:
+      - "8081:8081"
+
+    env_file:
+      - ./services/auth-service/.env
+
+    depends_on:
+      - auth-service-db
+      - kafka
+
+    restart: unless-stopped
+
+  gateway:
+    build:
+      context: ./services/gateway
+
+    container_name: gateway
+
+    ports:
+      - "8080:8080"
+
+    env_file:
+      - ./services/gateway/.env
+
+    depends_on:
+      - booking-service
+
+    restart: unless-stopped
+
+  booking-service-db:
+    image: postgres:17-alpine
+    container_name: booking_db
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=1234
+      - POSTGRES_DB=booking-service
+    ports:
+      - "5432:5432"
+    volumes:
+      - booking-service-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d booking-service"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  booking-service:
+    build:
+      context: ./services/booking-service
+      dockerfile: Dockerfile
+    container_name: booking
+    ports:
+      - "8082:8080"
+    env_file:
+      - services/booking-service/.env
+    environment:
+      DB_HOST: booking-service-db
+      DB_SSLMODE: disable
+    depends_on:
+      booking-service-db:
+        condition: service_healthy
+
+volumes:
+  auth-service-db-data:
+  kafka-data:
+  booking-service-db-data:
