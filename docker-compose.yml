@@ -192,3 +192,4 @@ volumes:
   auth-service-db-data:
   kafka-data:
   booking-service-db-data:
+  notification-audit-service-db-data:
