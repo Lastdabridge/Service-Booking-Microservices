@@ -141,7 +141,7 @@ services:
     environment:
       DB_HOST: booking-service-db
       DB_SSLMODE: disable
-     depends_on:
+    depends_on:
       booking-service-db:
         condition: service_healthy
       kafka:
