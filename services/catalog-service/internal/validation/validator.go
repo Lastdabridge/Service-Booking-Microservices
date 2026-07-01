@@ -12,7 +12,7 @@ type Validator interface {
 	ValidateServiceUpdate(req dto.UpdateServiceRequest) error
 	ValidateSpecialistCreate(req dto.SpecialistCreateRequest) error
 	ValidateSpecialistUpdate(req dto.SpecialistUpdateRequest) error
-	ValidateScheduleCreate(req dto.ScheduleCreateRequest) error
+	ValidateScheduleCreate(specialistID uint, req dto.ScheduleCreateRequest) error
 	ValidateScheduleUpdate(req dto.ScheduleUpdateRequest, currentStartTime, currentEndTime time.Time) error
 	ValidateCreateSpecServ(req dto.CreateSpecServ) error
 }
@@ -85,8 +85,8 @@ func (v *ServiceValidator) ValidateSpecialistUpdate(req dto.SpecialistUpdateRequ
 	return nil
 }
 
-func (v *ServiceValidator) ValidateScheduleCreate(req dto.ScheduleCreateRequest) error {
-	if req.SpecialistID == 0 {
+func (v *ServiceValidator) ValidateScheduleCreate(specialistID uint, req dto.ScheduleCreateRequest) error {
+	if specialistID == 0 {
 		return fmt.Errorf("specialist_id must be greater than 0")
 	}
 	if err := validateWeekday(req.Weekday); err != nil {
