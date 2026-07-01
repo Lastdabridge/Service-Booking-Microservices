@@ -219,10 +219,6 @@ func (s *appointmentService) getStartTime(startTimeString string) (*time.Time, e
 		now.Location(),
 	)
 
-	if startTime.Before(now) {
-		return nil, errors.New("выбранное время не находится в прошлом")
-	}
-
 	return &startTime, nil
 }
 
