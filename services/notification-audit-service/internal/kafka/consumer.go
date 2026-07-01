@@ -210,21 +210,8 @@ func notificationForStatusChange(event kafkadto.KafkaEvent) (model.NotificationC
 			Message: "Ваша запись была отменена.",
 		}, true
  
-	case "confirmed":
-		return model.NotificationCreateRequest{
-			UserID:  event.ClientID,
-			Type:    model.NotificationTypeBookingCancelled,
-			Title:   "Статус записи изменен",
-			Message: "Ваша запись была подтверждена.",
-		}, false
-
-	case "created":
-		return model.NotificationCreateRequest{
-			UserID:  event.ClientID,
-			Type:    model.NotificationTypeBookingCancelled,
-			Title:   "Статус записи изменен",
-			Message: "Ваша запись была создана.",
-		}, false
+	case "confirmed", "created":
+    	return model.NotificationCreateRequest{}, false
  
 	default:
 		log.Printf("[KAFKA CONSUMER] booking.status_changed: unknow status %q, notification don't created", event.Status)
