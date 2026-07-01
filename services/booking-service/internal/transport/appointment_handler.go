@@ -162,6 +162,10 @@ func (h *AppointmentHandler) Create(ctx *gin.Context) {
 	req.ClientID = uint(clientID)
 	appointment, err := h.appointment.CreateAppointment(req)
 	if err != nil {
+		if errors.Is(err, services.ErrServiceNotFound) {
+			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+			return
+		}
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

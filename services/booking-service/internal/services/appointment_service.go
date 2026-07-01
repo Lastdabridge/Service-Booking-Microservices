@@ -15,6 +15,8 @@ import (
 )
 
 var ErrAppointmentNotFound error = errors.New("Appointment по айди не найден")
+var ErrServiceNotFound error = errors.New("Service по айди не найден")
+var ErrSpecialistNotFound error = errors.New("Specialist по айди не найден")
 
 type AppointmentService interface {
 	CreateAppointment(appointment dto.AppointmentCreateRequest) (*models.Appointment, error)
@@ -278,7 +280,7 @@ func (s *appointmentService) isValidCreate(tx *gorm.DB, appointment dto.Appointm
 	specialist, err := s.Specialist.WithDB(tx).GetByID(*appointment.SpecialistID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("такого специалиста не существует")
+			return ErrSpecialistNotFound
 		}
 		return err
 	}
@@ -291,7 +293,7 @@ func (s *appointmentService) isValidCreate(tx *gorm.DB, appointment dto.Appointm
 	service, err := s.Service.WithDB(tx).GetByID(*appointment.ServiceID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("такой услуги не существует")
+			return ErrServiceNotFound
 		}
 		return err
 	}
