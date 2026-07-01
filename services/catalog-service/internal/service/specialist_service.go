@@ -47,7 +47,7 @@ func (s *specialistService) CreateSpecialist(c context.Context, req dto.Speciali
 		IsActive:    req.IsActive,
 	}
 
-	if err := s.service.CreateSpecialist(*spec); err != nil {
+	if err := s.service.CreateSpecialist(spec); err != nil {
 		return nil, err
 	}
 
@@ -85,7 +85,7 @@ func (s *specialistService) UpdateSpecialist(c context.Context, id uint, req dto
 		spec.IsActive = *req.IsActive
 	}
 
-	if err := s.service.UpdateSpecialist(id, *spec); err != nil {
+	if err := s.service.UpdateSpecialist(id, spec); err != nil {
 		return nil, err
 	}
 

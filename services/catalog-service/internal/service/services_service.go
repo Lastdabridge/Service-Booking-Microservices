@@ -147,8 +147,8 @@ func (s *servicesServise) UpdateService(c context.Context, id uint, req dto.Upda
 	event := &broker.Service{
 		Event:           broker.EventServiceUpdated,
 		ServiceID:       &id,
-		Title:           *req.Title,
-		Description:     *req.Description,
+		Title:           services.Title,
+		Description:     services.Description,
 		DurationMinutes: req.DurationMinutes,
 		Price:           req.Price,
 		IsActive:        req.IsActive,

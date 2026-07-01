@@ -14,7 +14,7 @@ type CatalogEventsConsumer struct {
 func NewBookingEventsConsumer() *CatalogEventsConsumer {
 	return &CatalogEventsConsumer{
 		Reader: kafka.NewReader(kafka.ReaderConfig{
-			Brokers:  []string{fmt.Sprintf("%s", os.Getenv("KAFKA_BROKER"))},
+			Brokers:  []string{fmt.Sprintf("%s", os.Getenv("KAFKA_BROKERS"))},
 			Topic:    fmt.Sprintf("%s", os.Getenv("KAFKA_CONSUMER_TOPIC")),
 			GroupID:  "catalog-service",
 			MinBytes: 1,

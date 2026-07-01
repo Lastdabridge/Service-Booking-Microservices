@@ -7,9 +7,9 @@ import (
 )
 
 type SpecialistRepository interface {
-	CreateSpecialist(req models.Specialist) error
+	CreateSpecialist(req *models.Specialist) error
 
-	UpdateSpecialist(id uint, req models.Specialist) error
+	UpdateSpecialist(id uint, req *models.Specialist) error
 
 	DeleteSpecialist(id uint) error
 
@@ -26,11 +26,11 @@ func NewSpecialistRepository(db *gorm.DB) SpecialistRepository {
 	return &gormSpecialistRepository{db: db}
 }
 
-func (r *gormSpecialistRepository) CreateSpecialist(req models.Specialist) error {
+func (r *gormSpecialistRepository) CreateSpecialist(req *models.Specialist) error {
 	return r.db.Create(req).Error
 }
 
-func (r *gormSpecialistRepository) UpdateSpecialist(id uint, req models.Specialist) error {
+func (r *gormSpecialistRepository) UpdateSpecialist(id uint, req *models.Specialist) error {
 	return r.db.Model(&models.Specialist{}).
 		Where("id = ?", id).
 		Updates(req).Error

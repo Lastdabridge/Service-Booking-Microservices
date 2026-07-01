@@ -23,14 +23,14 @@ func main() {
 		&models.CatalogEvent{},
 		&models.SpecialistSchedule{},
 		&models.SpecialistService{},
-		&models.CatalogEvent{},
+		&models.Specialist{},
 	); err != nil {
 		log.Fatalf("не удалось выполнить миграции: %v", err)
 	}
 
 	kafkaCfg := config.NewKafkaConfig()
 
-	produce := broker.NewProducer(kafkaCfg, "catalog.service")
+	produce := broker.NewProducer(kafkaCfg, "catalog.events")
 	defer produce.Close()
 
 	serviceRepo := repository.NewServicesRepositry(db)
@@ -49,10 +49,9 @@ func main() {
 
 	router := gin.Default()
 	transport.RegisterRoutes(router, serivceService, specialistService, scheduleService)
-	if err := router.Run(); err != nil {
+	if err := router.Run(":8083"); err != nil {
 		log.Fatalf("не удалось запустить HTTP-сервер: %v", err)
 	}
-	router.Run(":8080")
 }
 
 func consumeBookingEvents(consumer *broker.CatalogEventsConsumer, repo repository.CatalogEventRepository) {

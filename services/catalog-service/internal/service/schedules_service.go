@@ -46,9 +46,6 @@ func (s *schedulesService) GetByID(id uint) (*models.SpecialistSchedule, error) 
 }
 
 func (s *schedulesService) CreateSchedules(c context.Context, id uint, req dto.ScheduleCreateRequest) (*models.SpecialistSchedule, error) {
-	if _, err := s.service.GetByID(id); err != nil {
-		return nil, err
-	}
 	if err := s.validator.ValidateScheduleCreate(req); err != nil {
 		return nil, err
 	}
@@ -59,9 +56,12 @@ func (s *schedulesService) CreateSchedules(c context.Context, id uint, req dto.S
 		StartTime:    req.StartTime,
 		EndTime:      req.EndTime,
 	}
+	if err := s.service.CreateSchedules(id, schedule); err != nil {
+		return nil, err
+	}
 
 	event := &broker.SpecialistSchedules{
-		Event:        broker.EventSpecialistServiceAttached,
+		Event:        broker.EventSpecialistScheduleUpdated,
 		SpecialistID: req.SpecialistID,
 		Weekday:      req.Weekday,
 		StartTime:    req.StartTime,

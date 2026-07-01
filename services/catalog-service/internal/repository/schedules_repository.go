@@ -42,7 +42,7 @@ func (r *gormSchedulesRepository) DeleteSchedules(specialistID uint) error {
 
 func (r *gormSchedulesRepository) GetByID(specialistID uint) (*models.SpecialistSchedule, error) {
 	var schedule models.SpecialistSchedule
-	if err := r.db.First(&schedule, specialistID).Error; err != nil {
+	if err := r.db.Where("specialist_id = ?", specialistID).First(&schedule).Error; err != nil {
 		return nil, err
 	}
 	return &schedule, nil
