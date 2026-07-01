@@ -9,12 +9,12 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Veoler/notification-audit-service/internal/config"
-	"github.com/Veoler/notification-audit-service/internal/kafka"
-	"github.com/Veoler/notification-audit-service/internal/model"
-	"github.com/Veoler/notification-audit-service/internal/repository"
-	"github.com/Veoler/notification-audit-service/internal/service"
-	"github.com/Veoler/notification-audit-service/internal/transport"
+	"github.com/Veoler/notifications-audit-service/internal/config"
+	"github.com/Veoler/notifications-audit-service/internal/kafka"
+	"github.com/Veoler/notifications-audit-service/internal/model"
+	"github.com/Veoler/notifications-audit-service/internal/repository"
+	"github.com/Veoler/notifications-audit-service/internal/service"
+	"github.com/Veoler/notifications-audit-service/internal/transport"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )

@@ -2,7 +2,7 @@ package repository
 
 import (
 	"context"
-	"github.com/Veoler/notification-audit-service/internal/model"
+	"github.com/Veoler/notifications-audit-service/internal/model"
 	"gorm.io/gorm"
 )
 

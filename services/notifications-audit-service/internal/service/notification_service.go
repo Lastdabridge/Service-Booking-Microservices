@@ -5,8 +5,8 @@ import (
 	"errors"
 
 	"gorm.io/gorm"
-	"github.com/Veoler/notification-audit-service/internal/model"
-	"github.com/Veoler/notification-audit-service/internal/repository"
+	"github.com/Veoler/notifications-audit-service/internal/model"
+	"github.com/Veoler/notifications-audit-service/internal/repository"
 )
 
 var (

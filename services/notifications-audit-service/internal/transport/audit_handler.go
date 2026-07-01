@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/Veoler/notification-audit-service/internal/service"
+	"github.com/Veoler/notifications-audit-service/internal/service"
 )
 
 type AuditHandler struct {

@@ -9,9 +9,9 @@ import (
 	"strconv"
 	"time"
 	
-	"github.com/Veoler/notification-audit-service/internal/config"
-	"github.com/Veoler/notification-audit-service/internal/model"
-	"github.com/Veoler/notification-audit-service/internal/dto"
+	"github.com/Veoler/notifications-audit-service/internal/config"
+	"github.com/Veoler/notifications-audit-service/internal/model"
+	"github.com/Veoler/notifications-audit-service/internal/dto"
 	"github.com/segmentio/kafka-go"
 )
 
