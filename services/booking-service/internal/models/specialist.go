@@ -28,6 +28,11 @@ type SpecialistService struct {
 	ServiceID    uint   `json:"service_id"`
 }
 
+type SpecialistServiceDeleted struct {
+	SpecialistID uint `json:"specialist_id"`
+	ServiceID    uint `json:"service_id"`
+}
+
 // specialist_schedules
 type SpecialistShedules struct {
 	gorm.Model
@@ -36,4 +41,8 @@ type SpecialistShedules struct {
 	Weekday      string    `json:"weekday"`
 	StartTime    time.Time `json:"start_time"`
 	EndTime      time.Time `json:"end_time"`
+}
+
+type SpecialistShedulesDeleted struct {
+	ID uint `json:"id"`
 }
