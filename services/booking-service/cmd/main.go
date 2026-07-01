@@ -50,7 +50,7 @@ func main() {
 		serviceRepo,
 	)
 
-	if err := router.Run(); err != nil {
+	if err := router.Run(":8082"); err != nil {
 		log.Fatalf("не удалось запустить HTTP-сервер: %v", err)
 	}
 
@@ -105,8 +105,14 @@ func ConsumeEvents(
 			case "specialist.service_attached":
 				processError = handleSpecialistAttached(msg.Value, specialistRepo)
 
+			case "specialist.service_deleted":
+				processError = handleSpecialistServiceDeleted(msg.Value, specialistRepo)
+
 			case "specialist.schedule_updated":
 				processError = handleScheduleUpdated(msg.Value, specialistRepo)
+
+			case "specialist.schedule_deleted":
+				processError = handleSpecialistScheduleDeleted(msg.Value, specialistRepo)
 
 			case "service.created":
 				processError = handleServiceCreated(msg.Value, serviceRepo)
@@ -139,6 +145,42 @@ func ConsumeEvents(
 		}
 	}
 	log.Println("Kafka consumer stopped")
+}
+
+func handleSpecialistServiceDeleted(
+	data []byte,
+	repo repository.SpecialistRepository,
+) error {
+	var event models.SpecialistServiceDeleted
+
+	if err := json.Unmarshal(data, &event); err != nil {
+		log.Printf("критическая ошибка десериализации (сообщение пропущено): %v", err)
+		return nil
+	}
+
+	if err := repo.SpecialistServiceDelete(event.SpecialistID, event.ServiceID); err != nil {
+		return fmt.Errorf("ошибка удаления специалиста с его услугой: %v", err)
+	}
+
+	return nil
+}
+
+func handleSpecialistScheduleDeleted(
+	data []byte,
+	repo repository.SpecialistRepository,
+) error {
+	var event models.SpecialistShedulesDeleted
+
+	if err := json.Unmarshal(data, &event); err != nil {
+		log.Printf("критическая ошибка десериализации (сообщение пропущено): %v", err)
+		return nil
+	}
+
+	if err := repo.SpecialistShedulesDelete(event.ID); err != nil {
+		return fmt.Errorf("ошибка удаления расписания специалиста: %v", err)
+	}
+
+	return nil
 }
 
 func handleSpecialistCreated(

@@ -21,13 +21,13 @@ func NewAppointmentHanlder(appointment services.AppointmentService) *Appointment
 
 func (h *AppointmentHandler) RegisterRoutes(router *gin.Engine) {
 	router.Use(AuthorizationMiddleware)
-	appointments := router.Group("/appointments")
+	appointments := router.Group("/appointments/")
 	{
-		appointments.GET("/my", h.GetMy)
-		appointments.GET("/all", h.GetAll)
-		appointments.GET("/specialist/:id", h.GetSpecialist)
-		appointments.DELETE("/:id", h.Delete)
-		appointments.PATCH("/:id/status", h.Update)
+		appointments.GET("my", h.GetMy)
+		appointments.GET("all", h.GetAll)
+		appointments.GET("specialist/:id", h.GetSpecialist)
+		appointments.DELETE(":id", h.Delete)
+		appointments.PATCH(":id/status", h.Update)
 		appointments.POST("", h.Create)
 	}
 
