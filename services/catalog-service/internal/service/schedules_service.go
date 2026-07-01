@@ -71,10 +71,6 @@ func (s *schedulesService) CreateSchedules(c context.Context, id uint, req dto.S
 		return nil, err
 	}
 
-	if err := s.producer.Produce(context.Background(), schedule); err != nil {
-		return nil, err
-	}
-
 	return schedule, nil
 }
 
@@ -99,9 +95,9 @@ func (s *schedulesService) UpdateSchedules(c context.Context, id uint, req dto.S
 	}
 	event := &broker.SpecialistSchedules{
 		Event:     broker.EventSpecialistScheduleUpdated,
-		Weekday:   *req.Weekday,
-		StartTime: *req.StartTime,
-		EndTime:   *req.EndTime,
+		Weekday:   schedule.Weekday,
+		StartTime: schedule.StartTime,
+		EndTime:   schedule.EndTime,
 	}
 	if err := s.producer.Produce(c, event); err != nil {
 		return nil, err
@@ -119,7 +115,7 @@ func (s *schedulesService) DeleteSchedules(c context.Context, id uint) error {
 	}
 
 	event := &broker.ScheduleDelete{
-		Event: broker.EventSpecialistScheduleDelete,
+		Event: broker.EventSpecialistScheduleDeleted,
 		ID:    id,
 	}
 	if err := s.producer.Produce(c, event); err != nil {

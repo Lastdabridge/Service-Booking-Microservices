@@ -64,6 +64,10 @@ func (s *servicesServise) CreateService(c context.Context, req dto.CreateService
 		IsActive:        req.IsActive,
 	}
 
+	if err := s.service.CreateService(service); err != nil {
+		return nil, err
+	}
+
 	event := &broker.Service{
 		Event:           broker.EventServiceCreated,
 		ServiceID:       &service.ID,
@@ -190,7 +194,7 @@ func (s *servicesServise) DeleteSpecServ(c context.Context, id uint) error {
 	}
 
 	event := broker.SpecialistServiceDelete{
-		Event: broker.EventSpecialistServiceAttached,
+		Event: broker.EventSpecialistServiceDeleted,
 		ID:    id,
 	}
 	if err := s.producer.Produce(c, event); err != nil {

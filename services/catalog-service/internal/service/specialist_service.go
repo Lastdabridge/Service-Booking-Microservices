@@ -92,9 +92,9 @@ func (s *specialistService) UpdateSpecialist(c context.Context, id uint, req dto
 	event := &broker.Specialist{
 		Event:        broker.EventSpecialistUpdated,
 		SpecialistID: spec.ID,
-		Name:         *req.Name,
-		Description:  *req.Description,
-		IsActive:     *req.IsActive,
+		Name:         spec.Name,
+		Description:  spec.Description,
+		IsActive:     spec.IsActive,
 	}
 	if err := s.producer.Produce(c, event); err != nil {
 		return nil, err

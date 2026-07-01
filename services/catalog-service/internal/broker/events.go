@@ -12,7 +12,8 @@ const (
 	EventSpecialistDeleted         = "specialist.deleted"
 	EventSpecialistServiceAttached = "specialist.service_attached"
 	EventSpecialistScheduleUpdated = "specialist.schedule_updated"
-	EventSpecialistScheduleDelete  = "specialist.schedule_delete"
+	EventSpecialistScheduleDeleted = "specialist.schedule_deleted"
+	EventSpecialistServiceDeleted  = "specialist.service_deleted"
 
 	EventServiceCreated = "service.created"
 	EventServiceUpdated = "service.updated"
