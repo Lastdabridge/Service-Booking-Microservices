@@ -17,6 +17,7 @@ import (
 var ErrAppointmentNotFound error = errors.New("Appointment по айди не найден")
 var ErrServiceNotFound error = errors.New("Service по айди не найден")
 var ErrSpecialistNotFound error = errors.New("Specialist по айди не найден")
+var ErrAttachedNotFound error = errors.New("такой Specialist Service Attched не найден")
 
 type AppointmentService interface {
 	CreateAppointment(appointment dto.AppointmentCreateRequest) (*models.Appointment, error)
@@ -305,6 +306,9 @@ func (s *appointmentService) isValidCreate(tx *gorm.DB, appointment dto.Appointm
 	}
 	attached, err := s.Specialist.WithDB(tx).CheckService(*appointment.SpecialistID, *appointment.ServiceID)
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return ErrAttachedNotFound
+		}
 		return err
 	}
 	if attached.ServiceID != *appointment.ServiceID || attached.SpecialistID != *appointment.SpecialistID {
