@@ -19,16 +19,16 @@ func NewServicesHandler(service service.ServicesService) *ServicesHandler {
 }
 
 func (h *ServicesHandler) RegisterRoutes(r *gin.Engine) {
-	services := r.Group("/service")
+	services := r.Group("/services/")
 	services.GET("", h.GetAll)
 
 	services.Use(middleware.RoleMiddleware("admin"))
 	{
 		services.POST("", h.CreateService)
-		services.PATCH("/:id", h.UpdateService)
-		services.DELETE("/:id", h.DeleteService)
-		services.POST("/service-specialist/", h.CreateSpecServ)
-		services.DELETE("/service-specialist/:id", h.DeleteSpecServ)
+		services.PATCH(":id", h.UpdateService)
+		services.DELETE(":id", h.DeleteService)
+		services.POST("services-specialist", h.CreateSpecServ)
+		services.DELETE("services-specialist/:id", h.DeleteSpecServ)
 	}
 }
 

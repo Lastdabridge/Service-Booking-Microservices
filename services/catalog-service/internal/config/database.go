@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -10,19 +11,40 @@ import (
 )
 
 func SetUpDatabaseConnection() *gorm.DB {
-	err := godotenv.Load(".env")
-	if err != nil {
-		panic(err)
+
+	appEnv := os.Getenv("APP_ENV")
+	if appEnv == "" || appEnv == "local" {
+		if err := godotenv.Load(".env"); err != nil {
+			log.Println(".env file not found")
+		}
 	}
 
 	dbUser := os.Getenv("DB_USER")
-	dbPass := os.Getenv("DB_PASSWORD")
-	dbHost := os.Getenv("DB_HOST")
-	dbName := os.Getenv("DB_NAME")
-	dbPort := os.Getenv("DB_PORT")
-	dbSsl := os.Getenv("DB_SSLMODE")
+	if dbUser == "" {
+		log.Fatal("dbUser пуст")
+	}
 
-	dsn := fmt.Sprintf("host=%v user=%v password=%v dbname=%v port=%v sslmode=%v", dbHost, dbUser, dbPass, dbName, dbPort, dbSsl)
+	dbPass := os.Getenv("DB_PASSWORD")
+	if dbPass == "" {
+		log.Fatal("dbPass пуст")
+	}
+
+	dbHost := os.Getenv("DB_HOST")
+	if dbHost == "" {
+		log.Fatal("dbHost пуст")
+	}
+
+	dbName := os.Getenv("DB_NAME")
+	if dbName == "" {
+		log.Fatal("dbName пуст")
+	}
+
+	dbPort := os.Getenv("DB_PORT")
+	if dbPort == "" {
+		log.Fatal("dbPort пуст")
+	}
+
+	dsn := fmt.Sprintf("host=%v user=%v password=%v dbname=%v port=%v", dbHost, dbUser, dbPass, dbName, dbPort)
 
 	db, err := gorm.Open(postgres.New(postgres.Config{
 		DSN:                  dsn,
