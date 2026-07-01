@@ -194,8 +194,9 @@ func (s *servicesServise) DeleteSpecServ(c context.Context, id uint) error {
 	}
 
 	event := broker.SpecialistServiceDelete{
-		Event: broker.EventSpecialistServiceDeleted,
-		ID:    specialist.SpecialistID,
+		Event:        broker.EventSpecialistServiceDeleted,
+		SpecialistID: specialist.SpecialistID,
+		ServiceID:    specialist.ServiceID,
 	}
 	if err := s.producer.Produce(c, event); err != nil {
 		return err

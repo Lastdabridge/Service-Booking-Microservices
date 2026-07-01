@@ -73,11 +73,12 @@ type ServiceDelete struct {
 }
 
 type SpecialistServiceDelete struct {
-	Event string `json:"event"`
-	ID    uint   `json:"id"`
+	Event        string `json:"event"`
+	SpecialistID uint   `json:"specialist_id"`
+	ServiceID    uint   `json:"service_id"`
 }
 
 type ScheduleDelete struct {
-	Event string `json:"event"`
-	ID    uint   `json:"id"`
+	Event        string `json:"event"`
+	SpecialistID uint   `json:"specialist_id"`
 }

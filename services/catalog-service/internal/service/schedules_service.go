@@ -116,8 +116,8 @@ func (s *schedulesService) DeleteSchedules(c context.Context, id uint) error {
 	}
 
 	event := &broker.ScheduleDelete{
-		Event: broker.EventSpecialistScheduleDeleted,
-		ID:    id,
+		Event:        broker.EventSpecialistScheduleDeleted,
+		SpecialistID: id,
 	}
 	if err := s.producer.Produce(c, event); err != nil {
 		return nil

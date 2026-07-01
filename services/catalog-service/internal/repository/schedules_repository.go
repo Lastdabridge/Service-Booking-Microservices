@@ -37,7 +37,7 @@ func (r *gormSchedulesRepository) UpdateSchedules(specialistID uint, req *models
 }
 
 func (r *gormSchedulesRepository) DeleteSchedules(specialistID uint) error {
-	return r.db.Model(&models.SpecialistSchedule{}).Delete("specialist_id = ?", specialistID).Error
+	return r.db.Where("specialist_id = ?", specialistID).Delete(&models.SpecialistSchedule{}).Error
 }
 
 func (r *gormSchedulesRepository) GetByID(specialistID uint) (*models.SpecialistSchedule, error) {
