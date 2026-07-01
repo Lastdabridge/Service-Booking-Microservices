@@ -1,4 +1,5 @@
 services:
+
   auth-service-db:
     image: postgres:17
     container_name: auth-service-db
@@ -20,6 +21,28 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
+  notifications-audit-service-db:
+    image: postgres:17
+    container_name: notifications-audit-service-db
+    restart: unless-stopped
+ 
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 4545
+      POSTGRES_DB: notifications_audit_service
+ 
+    ports:
+      - "5434:5432"
+ 
+    volumes:
+      - notifications-audit-service-db-data:/var/lib/postgresql/data
+ 
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10  
 
   kafka:
     image: apache/kafka:3.7.0
@@ -142,9 +165,30 @@ services:
       DB_HOST: booking-service-db
       DB_SSLMODE: disable
     depends_on:
-      - booking-service-db
-        # condition: service_healthy
-      - kafka
+      booking-service-db:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+
+  notifications-audit-service:
+    build:
+      context: ./services/notifications-audit-service
+ 
+    container_name: notifications-audit-service
+ 
+    ports:
+      - "8084:8084"
+ 
+    env_file:
+      - ./services/notifications-audit-service/.env
+ 
+    depends_on:
+      notifications-audit-service-db:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+  
+    restart: unless-stopped      
 
   catalog-service-db:
     image: postgres:17-alpine
@@ -190,4 +234,5 @@ volumes:
   auth-service-db-data:
   kafka-data:
   booking-service-db-data:
+  notifications-audit-service-db-data:
   catalog-service-db-data:
