@@ -1,0 +1,11 @@
+.git
+.idea
+.vscode
+*.exe
+tmp/
+*.log
+
+Shpora.md
+Readme.md
+.env.example
+/vendor
