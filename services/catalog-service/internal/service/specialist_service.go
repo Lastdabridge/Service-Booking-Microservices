@@ -51,7 +51,14 @@ func (s *specialistService) CreateSpecialist(c context.Context, req dto.Speciali
 		return nil, err
 	}
 
-	if err := s.producer.Produce(c, spec); err != nil {
+	event := &broker.Specialist{
+		Event:        broker.EventSpecialistCreated,
+		SpecialistID: spec.ID,
+		Name:         req.Name,
+		Description:  req.Description,
+		IsActive:     req.IsActive,
+	}
+	if err := s.producer.Produce(c, event); err != nil {
 		return nil, err
 	}
 
@@ -81,7 +88,15 @@ func (s *specialistService) UpdateSpecialist(c context.Context, id uint, req dto
 	if err := s.service.UpdateSpecialist(id, *spec); err != nil {
 		return nil, err
 	}
-	if err := s.producer.Produce(c, spec); err != nil {
+
+	event := &broker.Specialist{
+		Event:        broker.EventSpecialistUpdated,
+		SpecialistID: spec.ID,
+		Name:         *req.Name,
+		Description:  *req.Description,
+		IsActive:     *req.IsActive,
+	}
+	if err := s.producer.Produce(c, event); err != nil {
 		return nil, err
 	}
 
@@ -94,12 +109,14 @@ func (s *specialistService) DeleteSpecialist(c context.Context, id uint) error {
 		return err
 	}
 
-	event := broker.SpecialistDelete{ID: id}
-
 	if err := s.service.DeleteSpecialist(id); err != nil {
 		return err
 	}
 
+	event := broker.SpecialistDelete{
+		Event: broker.EventSpecialistDeleted,
+		ID:    id,
+	}
 	if err := s.producer.Produce(c, event); err != nil {
 		return err
 	}

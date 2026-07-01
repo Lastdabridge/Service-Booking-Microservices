@@ -12,6 +12,7 @@ const (
 	EventSpecialistDeleted         = "specialist.deleted"
 	EventSpecialistServiceAttached = "specialist.service_attached"
 	EventSpecialistScheduleUpdated = "specialist.schedule_updated"
+	EventSpecialistScheduleDelete  = "specialist.schedule_delete"
 
 	EventServiceCreated = "service.created"
 	EventServiceUpdated = "service.updated"
@@ -30,8 +31,8 @@ type Specialist struct {
 
 // SpecialistDelete — для "specialist.deleted"
 type SpecialistDelete struct {
-	ID    uint   `json:"id"`
 	Event string `json:"event"`
+	ID    uint   `json:"id"`
 }
 
 // SpecialistService — для "specialist.service_attached"
@@ -66,9 +67,16 @@ type Service struct {
 
 // ServiceDelete — для "service.deleted"
 type ServiceDelete struct {
-	ID uint `json:"id"`
+	Event string `json:"event"`
+	ID    uint   `json:"id"`
 }
 
 type SpecialistServiceDelete struct {
-	ID uint `json:"id"`
+	Event string `json:"event"`
+	ID    uint   `json:"id"`
+}
+
+type ScheduleDelete struct {
+	Event string `json:"event"`
+	ID    uint   `json:"id"`
 }

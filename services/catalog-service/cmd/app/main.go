@@ -21,29 +21,26 @@ func main() {
 	if err := db.AutoMigrate(
 		&models.Service{},
 		&models.CatalogEvent{},
+		&models.SpecialistSchedule{},
+		&models.SpecialistService{},
+		&models.CatalogEvent{},
 	); err != nil {
 		log.Fatalf("не удалось выполнить миграции: %v", err)
 	}
 
 	kafkaCfg := config.NewKafkaConfig()
 
-	services := broker.NewProducer(kafkaCfg, "services")
-	defer services.Close()
-
-	specialist := broker.NewProducer(kafkaCfg, "specialist")
-	defer specialist.Close()
-
-	schedules := broker.NewProducer(kafkaCfg, "schedules")
-	defer schedules.Close()
+	produce := broker.NewProducer(kafkaCfg, "catalog.service")
+	defer produce.Close()
 
 	serviceRepo := repository.NewServicesRepositry(db)
 	specialistRepo := repository.NewSpecialistRepository(db)
 	scheduleRepo := repository.NewSchedulesRepository(db)
 	catalogEventRepo := repository.NewCatalogEventRepository(db)
 
-	serivceService := service.NewServicesService(specialistRepo, serviceRepo, services)
-	specialistService := service.NewSpecialistService(specialistRepo, specialist)
-	scheduleService := service.NewSchedulesService(scheduleRepo, schedules)
+	serivceService := service.NewServicesService(specialistRepo, serviceRepo, produce)
+	specialistService := service.NewSpecialistService(specialistRepo, produce)
+	scheduleService := service.NewSchedulesService(scheduleRepo, produce)
 
 	consumer := broker.NewBookingEventsConsumer()
 	defer consumer.Close()

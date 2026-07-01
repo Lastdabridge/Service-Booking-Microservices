@@ -13,7 +13,7 @@ type Validator interface {
 	ValidateSpecialistCreate(req dto.SpecialistCreateRequest) error
 	ValidateSpecialistUpdate(req dto.SpecialistUpdateRequest) error
 	ValidateScheduleCreate(req dto.ScheduleCreateRequest) error
-	ValidateScheduleUpdate(req dto.ScheduleUpdateRequest, currentStartTime, currentEndTime string) error
+	ValidateScheduleUpdate(req dto.ScheduleUpdateRequest, currentStartTime, currentEndTime time.Time) error
 	ValidateCreateSpecServ(req dto.CreateSpecServ) error
 }
 
@@ -92,27 +92,12 @@ func (v *ServiceValidator) ValidateScheduleCreate(req dto.ScheduleCreateRequest)
 	if err := validateWeekday(req.Weekday); err != nil {
 		return err
 	}
-	return validateTimeRange(req.StartTime, req.EndTime)
+	return nil
 }
 
-func (v *ServiceValidator) ValidateScheduleUpdate(req dto.ScheduleUpdateRequest, currentStartTime, currentEndTime string) error {
+func (v *ServiceValidator) ValidateScheduleUpdate(req dto.ScheduleUpdateRequest, currentStartTime, currentEndTime time.Time) error {
 	if req.Weekday != nil {
 		if err := validateWeekday(*req.Weekday); err != nil {
-			return err
-		}
-	}
-
-	startTime := currentStartTime
-	endTime := currentEndTime
-	if req.StartTime != nil {
-		startTime = *req.StartTime
-	}
-	if req.EndTime != nil {
-		endTime = *req.EndTime
-	}
-
-	if req.StartTime != nil || req.EndTime != nil {
-		if err := validateTimeRange(startTime, endTime); err != nil {
 			return err
 		}
 	}
@@ -165,22 +150,4 @@ func validateWeekday(value string) error {
 	default:
 		return fmt.Errorf("weekday must be one of monday, tuesday, wednesday, thursday, friday, saturday, sunday")
 	}
-}
-
-func validateTimeRange(startTime, endTime string) error {
-	start, err := time.Parse("15:04", strings.TrimSpace(startTime))
-	if err != nil {
-		return fmt.Errorf("invalid start_time: %w", err)
-	}
-
-	end, err := time.Parse("15:04", strings.TrimSpace(endTime))
-	if err != nil {
-		return fmt.Errorf("invalid end_time: %w", err)
-	}
-
-	if !end.After(start) {
-		return fmt.Errorf("end_time must be later than start_time")
-	}
-
-	return nil
 }

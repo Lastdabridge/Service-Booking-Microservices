@@ -1,11 +1,15 @@
 package models
 
-import "gorm.io/gorm"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 type SpecialistSchedule struct {
 	gorm.Model
-	SpecialistID uint   `gorm:"not null;index"`
-	Weekday      string `gorm:"not null"`
-	StartTime    string `gorm:"not null"`
-	EndTime      string `gorm:"not null"`
+	SpecialistID uint      `gorm:"not null;index"`
+	Weekday      string    `gorm:"not null"`
+	StartTime    time.Time `gorm:"not null"`
+	EndTime      time.Time `gorm:"not null"`
 }

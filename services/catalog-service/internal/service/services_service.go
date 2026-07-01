@@ -64,12 +64,16 @@ func (s *servicesServise) CreateService(c context.Context, req dto.CreateService
 		IsActive:        req.IsActive,
 	}
 
-	if err := s.service.CreateService(service); err != nil {
-		return nil, err
+	event := &broker.Service{
+		Event:           broker.EventServiceCreated,
+		ServiceID:       &service.ID,
+		Title:           req.Title,
+		Description:     req.Description,
+		DurationMinutes: &req.DurationMinutes,
+		Price:           &req.Price,
+		IsActive:        &req.IsActive,
 	}
-
-	err := s.producer.Produce(c, service)
-	if err != nil {
+	if err := s.producer.Produce(c, event); err != nil {
 		return nil, err
 	}
 
@@ -99,7 +103,12 @@ func (s *servicesServise) CreateSpecServ(c context.Context, req dto.CreateSpecSe
 		return nil, err
 	}
 
-	if err := s.producer.Produce(c, specServ); err != nil {
+	event := &broker.SpecialistService{
+		Event:        broker.EventSpecialistServiceAttached,
+		SpecialistID: req.SpecialistID,
+		ServiceID:    req.ServiceID,
+	}
+	if err := s.producer.Produce(c, event); err != nil {
 		return nil, err
 	}
 
@@ -135,9 +144,19 @@ func (s *servicesServise) UpdateService(c context.Context, id uint, req dto.Upda
 		return nil, err
 	}
 
-	if err := s.producer.Produce(context.Background(), services); err != nil {
+	event := &broker.Service{
+		Event:           broker.EventServiceUpdated,
+		ServiceID:       &id,
+		Title:           *req.Title,
+		Description:     *req.Description,
+		DurationMinutes: req.DurationMinutes,
+		Price:           req.Price,
+		IsActive:        req.IsActive,
+	}
+	if err := s.producer.Produce(c, event); err != nil {
 		return nil, err
 	}
+
 	return services, nil
 }
 
@@ -152,12 +171,12 @@ func (s *servicesServise) DeleteService(c context.Context, id uint) error {
 	}
 
 	event := broker.ServiceDelete{
-		ID: id,
+		Event: broker.EventServiceDeleted,
+		ID:    id,
 	}
 	if err := s.producer.Produce(c, event); err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -170,7 +189,10 @@ func (s *servicesServise) DeleteSpecServ(c context.Context, id uint) error {
 		return err
 	}
 
-	event := broker.SpecialistServiceDelete{ID: id}
+	event := broker.SpecialistServiceDelete{
+		Event: broker.EventSpecialistServiceAttached,
+		ID:    id,
+	}
 	if err := s.producer.Produce(c, event); err != nil {
 		return err
 	}
