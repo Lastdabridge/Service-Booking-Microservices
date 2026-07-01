@@ -19,14 +19,14 @@ func NewSpecialistHandler(specialist service.SpecialistService) *SpecialistHandl
 }
 
 func (h *SpecialistHandler) RegisterRoutes(r *gin.Engine) {
-	spec := r.Group("/specialists")
+	spec := r.Group("/specialists/")
 	spec.GET("", h.GetAllSpecialists)
 
 	spec.Use(middleware.RoleMiddleware("admin"))
 	{
 		spec.POST("", h.CreateSpecialist)
-		spec.PATCH("/:id", h.UpdateSpecialist)
-		spec.DELETE("/:id", h.DeleteSpecialist)
+		spec.PATCH(":id", h.UpdateSpecialist)
+		spec.DELETE(":id", h.DeleteSpecialist)
 	}
 }
 

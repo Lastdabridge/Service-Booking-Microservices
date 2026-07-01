@@ -19,15 +19,15 @@ func NewSchedulesHandler(schedule service.SchedulesService) *SchedulesHandler {
 }
 
 func (h *SchedulesHandler) RegisterRoutes(r *gin.Engine) {
-	specialists := r.Group("/specialists")
+	specialists := r.Group("/specialists/")
 
-	specialists.GET("/:id/schedule", h.GetSpecialistSchedule)
+	specialists.GET(":id/schedule", h.GetSpecialistSchedule)
 
 	specialists.Use(middleware.RoleMiddleware("admin"))
 	{
-		specialists.POST("/:id/schedule", h.CreateSchedules)
-		specialists.PATCH("/:id/schedule", h.UpdateSchedules)
-		specialists.DELETE("/:id/schedule", h.DeleteSchedules)
+		specialists.POST(":id/schedule", h.CreateSchedules)
+		specialists.PATCH(":id/schedule", h.UpdateSchedules)
+		specialists.DELETE(":id/schedule", h.DeleteSchedules)
 	}
 }
 
