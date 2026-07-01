@@ -156,7 +156,7 @@ services:
     build:
       context: ./services/booking-service
       dockerfile: Dockerfile
-    container_name: booking
+    container_name: booking-service
     ports:
       - "8082:8080"
     env_file:
@@ -190,8 +190,49 @@ services:
   
     restart: unless-stopped      
 
+  catalog-service-db:
+    image: postgres:17-alpine
+    container_name: catalog-service-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1234
+      POSTGRES_DB: catalog-service
+    ports:
+      - "5434:5432"
+    volumes:
+      - catalog-service-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d catalog-service"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  catalog-service:
+    build:
+      context: ./services/catalog-service
+      dockerfile: Dockerfile
+    container_name: catalog-service
+    ports:
+      - "8083:8083"
+    env_file:
+      - services/catalog-service/.env
+    environment:
+      DB_HOST: catalog-service-db
+      DB_SSLMODE: disable
+      KAFKA_BROKERS: kafka:9092
+      KAFKA_CONSUMER_TOPIC: booking.events
+      KAFKA_GROUP_ID: catalog-service
+    depends_on:
+      catalog-service-db: 
+        condition: service_healthy
+      kafka: 
+        condition: service_started
+    restart: unless-stopped
+
 volumes:
   auth-service-db-data:
   kafka-data:
   booking-service-db-data:
   notifications-audit-service-db-data:
+  catalog-service-db-data:
