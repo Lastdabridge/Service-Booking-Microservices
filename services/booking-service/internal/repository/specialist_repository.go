@@ -16,6 +16,8 @@ type SpecialistRepository interface {
 	UpsertSpecialist(event *models.Specialist) error
 	UpsertSchedule(event *models.SpecialistShedules) error
 	UpsertAttached(*models.SpecialistService) error
+	SpecialistServiceDelete(specialistID uint) error
+	SpecialistShedulesDelete(specialistID uint) error
 }
 
 type gormSpecialistRepository struct {
@@ -28,6 +30,14 @@ func NewSpecialistRepository(
 	return &gormSpecialistRepository{
 		db: db,
 	}
+}
+
+func (r *gormSpecialistRepository) SpecialistServiceDelete(specialistID uint) error {
+	return r.db.Where("specialist_id = ?", specialistID).Delete(&models.SpecialistService{}).Error
+}
+
+func (r *gormSpecialistRepository) SpecialistShedulesDelete(specialistID uint) error {
+	return r.db.Where("specialist_id = ?", specialistID).Delete(&models.SpecialistShedules{}).Error
 }
 
 func (r *gormSpecialistRepository) UpsertSpecialist(event *models.Specialist) error {
