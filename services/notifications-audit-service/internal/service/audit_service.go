@@ -3,7 +3,6 @@ package service
 import (
 	"errors"
 	"context"
-	"time"
 
 	"gorm.io/gorm"
 	"github.com/Veoler/notifications-audit-service/internal/model"
@@ -16,7 +15,6 @@ type AuditService interface {
 	CreateAuditLog(ctx context.Context, req model.AuditLogCreatedRequest) (*model.AuditLog, error)
 	GetAllAuditLogs(ctx context.Context, ) ([]model.AuditLog, error)
 	GetAuditLogByID(ctx context.Context, id uint) (*model.AuditLog, error)
-	IsSuspicious(ctx context.Context, actorID uint, eventType string, window time.Duration, threshold int64) (bool, error)
 }
 
 type AuditProducer interface {
@@ -67,15 +65,4 @@ func (s *auditService) GetAuditLogByID(ctx context.Context, id uint) (*model.Aud
 		return nil, err
 	}
 	return auditLog, nil
-}
-
-func (s *auditService) IsSuspicious(ctx context.Context, actorID uint, eventType string, window time.Duration, threshold int64) (bool, error) {
-	since := time.Now().Add(-window)
- 
-	count, err := s.repo.CountRecentByActor(ctx, actorID, eventType, since)
-	if err != nil {
-		return false, err
-	}
- 
-	return count >= threshold, nil
 }
