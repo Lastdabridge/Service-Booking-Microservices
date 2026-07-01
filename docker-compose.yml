@@ -142,9 +142,9 @@ services:
       DB_HOST: booking-service-db
       DB_SSLMODE: disable
     depends_on:
-      booking-service-db:
-        condition: service_healthy
-      kafka:
+      - booking-service-db
+        # condition: service_healthy
+      - kafka
 
 volumes:
   auth-service-db-data:
