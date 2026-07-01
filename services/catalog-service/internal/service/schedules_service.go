@@ -94,10 +94,11 @@ func (s *schedulesService) UpdateSchedules(c context.Context, id uint, req dto.S
 		return nil, err
 	}
 	event := &broker.SpecialistSchedules{
-		Event:     broker.EventSpecialistScheduleUpdated,
-		Weekday:   schedule.Weekday,
-		StartTime: schedule.StartTime,
-		EndTime:   schedule.EndTime,
+		Event:        broker.EventSpecialistScheduleUpdated,
+		SpecialistID: schedule.SpecialistID,
+		Weekday:      schedule.Weekday,
+		StartTime:    schedule.StartTime,
+		EndTime:      schedule.EndTime,
 	}
 	if err := s.producer.Produce(c, event); err != nil {
 		return nil, err
