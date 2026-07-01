@@ -29,7 +29,8 @@ type SpecialistService struct {
 }
 
 type SpecialistServiceDeleted struct {
-	ID uint `json:"id"`
+	SpecialistID uint `json:"specialist_id"`
+	ServiceID    uint `json:"service_id"`
 }
 
 // specialist_schedules

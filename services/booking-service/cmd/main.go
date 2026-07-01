@@ -110,7 +110,7 @@ func ConsumeEvents(
 
 			case "specialist.schedule_updated":
 				processError = handleScheduleUpdated(msg.Value, specialistRepo)
-			
+
 			case "specialist.schedule_deleted":
 				processError = handleSpecialistScheduleDeleted(msg.Value, specialistRepo)
 
@@ -158,7 +158,7 @@ func handleSpecialistServiceDeleted(
 		return nil
 	}
 
-	if err := repo.SpecialistServiceDelete(event.ID); err != nil {
+	if err := repo.SpecialistServiceDelete(event.SpecialistID, event.ServiceID); err != nil {
 		return fmt.Errorf("ошибка удаления специалиста с его услугой: %v", err)
 	}
 
