@@ -18,6 +18,7 @@ const (
 type Appointment struct {
 	gorm.Model
 	ClientID     uint       `json:"client_id"`
+	Weekday      string     `json:"weekday"`
 	SpecialistID uint       `json:"specialist_id"`
 	ServiceID    uint       `json:"service_id"`
 	StartTime    *time.Time `json:"start_time"`

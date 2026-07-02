@@ -11,7 +11,7 @@ type SpecialistRepository interface {
 	Delete(uint) error
 	GetByID(id uint) (*models.Specialist, error)
 	CheckService(specialistID uint, ServiceID uint) (*models.SpecialistService, error)
-	GetSchedule(specialist_id uint) (*models.SpecialistShedules, error)
+	GetSchedule(weekday string, specialist_id uint) (*models.SpecialistShedules, error)
 	WithDB(db *gorm.DB) SpecialistRepository
 	UpsertSpecialist(event *models.Specialist) error
 	UpsertSchedule(event *models.SpecialistShedules) error
@@ -129,10 +129,10 @@ func (r *gormSpecialistRepository) CreateAttached(req *models.SpecialistService)
 	return nil
 }
 
-func (r *gormSpecialistRepository) GetSchedule(specialist_id uint) (*models.SpecialistShedules, error) {
+func (r *gormSpecialistRepository) GetSchedule(weekday string, specialist_id uint) (*models.SpecialistShedules, error) {
 	var schedule models.SpecialistShedules
 
-	if err := r.db.Where("specialist_id = ?", specialist_id).First(&schedule).Error; err != nil {
+	if err := r.db.Where("specialist_id = ? AND weekday = ?", specialist_id, weekday).First(&schedule).Error; err != nil {
 		return nil, err
 	}
 
