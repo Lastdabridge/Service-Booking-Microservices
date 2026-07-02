@@ -15,7 +15,7 @@ type AppointmentRepository interface {
 	GetAllSpecialist(specialist_id uint) ([]models.Appointment, error)
 	Delete(appointment_id uint) error
 	Update(appointment *models.Appointment) error
-	HasConflicts(specialistID uint, start time.Time, end time.Time) (bool, error)
+	HasConflicts(specialistID uint, start time.Time, end time.Time, weekday string) (bool, error)
 	WithDB(*gorm.DB) AppointmentRepository
 }
 
@@ -99,7 +99,7 @@ func (r *gormAppointmentRepository) Update(appointment *models.Appointment) erro
 	return r.db.Save(appointment).Error
 }
 
-func (r *gormAppointmentRepository) HasConflicts(specialistID uint, start time.Time, end time.Time) (bool, error) {
+func (r *gormAppointmentRepository) HasConflicts(specialistID uint, start time.Time, end time.Time, weekday string) (bool, error) {
 	var count int64
 
 	activeStatuses := []models.Status{
@@ -108,6 +108,7 @@ func (r *gormAppointmentRepository) HasConflicts(specialistID uint, start time.T
 	}
 
 	err := r.db.Model(&models.Appointment{}).
+		Where("weekday = ?", weekday).
 		Where("specialist_id = ?", specialistID).
 		Where("status IN ?", activeStatuses).
 		Where("start_time < ?", end).

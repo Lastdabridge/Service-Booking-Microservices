@@ -76,7 +76,7 @@ func (s *appointmentService) CreateAppointment(req dto.AppointmentCreateRequest)
 			return fmt.Errorf("Ошибка валидации при создании appointment: %v", err)
 		}
 
-		if err := s.checkSpecialistWorkDay(tx, *startTime, *endTime, *req.SpecialistID); err != nil {
+		if err := s.checkSpecialistWorkDay(tx, *startTime, *endTime, *req.SpecialistID, *req.Weekday); err != nil {
 			return err
 		}
 
@@ -219,6 +219,10 @@ func (s *appointmentService) getStartTime(startTimeString string) (*time.Time, e
 		now.Location(),
 	)
 
+	if startTime.Before(time.Now()) {
+		return nil, errors.New("время не может быть в прошлом")
+	}
+
 	return &startTime, nil
 }
 
@@ -310,7 +314,13 @@ func (s *appointmentService) isValidCreate(tx *gorm.DB, appointment dto.Appointm
 	if attached.ServiceID != *appointment.ServiceID || attached.SpecialistID != *appointment.SpecialistID {
 		return errors.New("специалист не занимается такой услугой")
 	}
-	hasConflict, err := s.Appointment.WithDB(tx).HasConflicts(*appointment.SpecialistID, startTime, endTime)
+	if appointment.Weekday == nil {
+		return errors.New("weekday обязателен")
+	}
+	if err := s.isValidWeekDay(*appointment.Weekday); err != nil {
+		return err
+	}
+	hasConflict, err := s.Appointment.WithDB(tx).HasConflicts(*appointment.SpecialistID, startTime, endTime, *appointment.Weekday)
 	if err != nil {
 		return fmt.Errorf("ошибка проверки конфликтов расписания: %v", err)
 	}
@@ -321,8 +331,16 @@ func (s *appointmentService) isValidCreate(tx *gorm.DB, appointment dto.Appointm
 	return nil
 }
 
-func (s *appointmentService) checkSpecialistWorkDay(tx *gorm.DB, startTime, endTime time.Time, specialist_id uint) error {
-	schedule, err := s.Specialist.WithDB(tx).GetSchedule(specialist_id)
+func (s *appointmentService) isValidWeekDay(weekday string) error {
+	switch weekday {
+	case "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday":
+		return nil
+	}
+	return errors.New("такой дни недели не существует")
+}
+
+func (s *appointmentService) checkSpecialistWorkDay(tx *gorm.DB, startTime, endTime time.Time, specialist_id uint, weekday string) error {
+	schedule, err := s.Specialist.WithDB(tx).GetSchedule(weekday, specialist_id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return errors.New("расписание специалиста не найдено")
@@ -330,9 +348,6 @@ func (s *appointmentService) checkSpecialistWorkDay(tx *gorm.DB, startTime, endT
 		return err
 	}
 
-	if schedule.Weekday == "Saturday" || schedule.Weekday == "Sunday" {
-		return errors.New("специалист сегодня не работает")
-	}
 	if startTime.Hour() < schedule.StartTime.Hour() ||
 		(startTime.Hour() == schedule.StartTime.Hour() && startTime.Minute() < schedule.StartTime.Minute()) {
 		return errors.New("специалист в это время еще не работает")

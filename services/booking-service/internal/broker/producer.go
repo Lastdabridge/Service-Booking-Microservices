@@ -19,6 +19,7 @@ type Booking struct {
 	Event        string    `json:"event"`
 	BookingID    uint      `json:"booking_id"`
 	ClientID     uint      `json:"client_id"`
+	Weekday      string    `json:"weekday"`
 	SpecialistID uint      `json:"specialist_id"`
 	ServiceID    uint      `json:"service_id"`
 	StartTime    time.Time `json:"start_time"`
@@ -39,6 +40,7 @@ func (p BookingEventsProducer) PublishBookingEvent(booking models.Appointment, e
 		Event:        event,
 		BookingID:    booking.ID,
 		ClientID:     booking.ClientID,
+		Weekday:      booking.Weekday,
 		SpecialistID: booking.SpecialistID,
 		ServiceID:    booking.ServiceID,
 		StartTime:    *booking.StartTime,
