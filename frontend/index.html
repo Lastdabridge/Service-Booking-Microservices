@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Barber&nbsp;Desk — сервис бронирования</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ===== AUTH SCREEN ===== -->
+  <div id="auth-screen" class="auth-screen">
+    <div class="auth-card">
+      <div class="brand">
+        <span class="pole"></span>
+        <div>
+          <h1>Barber Desk</h1>
+          <p class="brand-sub">Внутренняя система записи барбершопа</p>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="login">Вход</button>
+        <button class="tab-btn" data-tab="register">Регистрация</button>
+      </div>
+
+      <form id="login-form" class="auth-form">
+        <label>Email
+          <input type="email" name="email" required autocomplete="username">
+        </label>
+        <label>Пароль
+          <input type="password" name="password" required autocomplete="current-password">
+        </label>
+        <button type="submit" class="btn primary">Войти</button>
+        <p class="form-error" data-for="login"></p>
+      </form>
+
+      <form id="register-form" class="auth-form hidden">
+        <label>Имя
+          <input type="text" name="name" required minlength="2" maxlength="100">
+        </label>
+        <label>Email
+          <input type="email" name="email" required autocomplete="username">
+        </label>
+        <label>Пароль
+          <input type="password" name="password" required minlength="8" autocomplete="new-password">
+        </label>
+        <label>Код администратора <span class="hint">(необязательно)</span>
+          <input type="text" name="admin_code" autocomplete="off">
+        </label>
+        <button type="submit" class="btn primary">Создать аккаунт</button>
+        <p class="form-error" data-for="register"></p>
+      </form>
+
+      <details class="settings">
+        <summary>Адрес API</summary>
+        <label>Gateway URL
+          <input type="text" id="api-base-input" placeholder="http://localhost:8080/api">
+        </label>
+        <button type="button" id="save-api-base" class="btn ghost small">Сохранить</button>
+      </details>
+    </div>
+  </div>
+
+  <!-- ===== APP SHELL ===== -->
+  <div id="app-shell" class="app-shell hidden">
+    <aside class="sidebar">
+      <div class="brand small">
+        <span class="pole"></span>
+        <span class="brand-name">Barber Desk</span>
+      </div>
+
+      <nav id="nav" class="nav"></nav>
+
+      <div class="sidebar-footer">
+        <div class="me">
+          <div class="me-name" id="me-name">—</div>
+          <div class="me-role" id="me-role">—</div>
+        </div>
+        <button id="logout-btn" class="btn ghost small">Выйти</button>
+      </div>
+    </aside>
+
+    <main class="content">
+      <header class="topbar">
+        <h2 id="page-title">—</h2>
+        <div class="topbar-right">
+          <span id="api-base-label" class="api-base-label"></span>
+        </div>
+      </header>
+      <div id="toast" class="toast hidden"></div>
+      <div id="view" class="view"></div>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

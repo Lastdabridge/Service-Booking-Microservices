@@ -6,8 +6,10 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/Lastdabridge/Service-Booking-Microservices/services/gateway/internal/transport"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -36,6 +38,15 @@ func main() {
 	catalogProxy := reverseProxy(os.Getenv("CATALOG_URL"))
 	bookingProxy := reverseProxy(os.Getenv("BOOKING_URL"))
 	notificationsAndAuditProxy := reverseProxy(os.Getenv("NOTIFICATIONS_AUDIT_URL"))
+
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:5173"}, // адрес, откуда открываешь фронт
+		AllowMethods:     []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Authorization", "Content-Type"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
 
 	unprotected := r.Group("/api")
 
