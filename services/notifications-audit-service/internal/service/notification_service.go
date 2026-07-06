@@ -18,6 +18,7 @@ type NotificationService interface {
 	CreateNotification(ctx context.Context, req model.NotificationCreateRequest, sourceEvent string) (*model.Notification, error)
 	GetMyNotifications(ctx context.Context, userID uint) ([]model.Notification, error)
 	MarkNotificationAsRead(ctx context.Context, notificationID, userID uint) error
+	ReportNotificationFailed(ctx context.Context, sourceEvent, reason string)
 }
 
 type NotificationProducer interface {
@@ -79,4 +80,8 @@ func (s *notificationService) MarkNotificationAsRead(ctx context.Context, notifi
 	s.producer.PublishNotificationRead(ctx, notification)
 
     return nil
+}
+
+func (s *notificationService) ReportNotificationFailed(ctx context.Context, sourceEvent, reason string) {
+    s.producer.PublishNotificationFailed(ctx, 0, sourceEvent, reason)
 }

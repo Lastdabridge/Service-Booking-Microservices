@@ -12,12 +12,7 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-func StartConsumers(
-	ctx context.Context,
-	cfg *config.Config,
-	notifSvc service.NotificationService,
-	auditSvc service.AuditService,
-) {
+func StartConsumers(ctx context.Context, cfg *config.Config, notifSvc service.NotificationService, auditSvc service.AuditService) {
 	topics := []string{
 		cfg.TopicUsersEvents,
 		cfg.TopicCatalogEvents,
@@ -87,7 +82,7 @@ func handleMessage(
 		return
 	}
 
-	maybeCreateNotification(ctx, event, cfg, notifSvc)
+	maybeCreateNotification(ctx, event, notifSvc)
 }
 
 func saveAuditLog(
@@ -120,6 +115,7 @@ func saveAuditLog(
 		ActorID:       actorID,
 		EntityID:      entityID,
 	})
+	
 	if err != nil {
 		log.Printf("[KAFKA CONSUMER] failed to create audit log for %s: %v", event.Event, err)
 		return nil, err
@@ -129,7 +125,7 @@ func saveAuditLog(
 	return entry, nil
 }
 
-func maybeCreateNotification(ctx context.Context, event kafkadto.KafkaEvent, cfg *config.Config, notifSvc service.NotificationService) {
+func maybeCreateNotification(ctx context.Context, event kafkadto.KafkaEvent, notifSvc service.NotificationService) {
 	var req model.NotificationCreateRequest
 
 	switch event.Event {
@@ -178,7 +174,7 @@ func maybeCreateNotification(ctx context.Context, event kafkadto.KafkaEvent, cfg
 
 	if req.UserID == 0 {
 		log.Printf("[KAFKA CONSUMER] event %s missing user_id or client_id", event.Event)
-		NewProducer(cfg).PublishNotificationFailed(ctx, 0, event.Event, "missing user_id or client_id")
+		notifSvc.ReportNotificationFailed(ctx, event.Event, "missing user_id or client_id")
 		return
 	}
 

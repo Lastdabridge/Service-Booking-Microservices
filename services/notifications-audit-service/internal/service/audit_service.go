@@ -13,7 +13,7 @@ var ErrAuditLogNotFound = errors.New("audit log not found")
 
 type AuditService interface {
 	CreateAuditLog(ctx context.Context, req model.AuditLogCreatedRequest) (*model.AuditLog, error)
-	GetAllAuditLogs(ctx context.Context, ) ([]model.AuditLog, error)
+	GetAllAuditLogs(ctx context.Context) ([]model.AuditLog, error)
 	GetAuditLogByID(ctx context.Context, id uint) (*model.AuditLog, error)
 }
 
@@ -52,7 +52,7 @@ func (s *auditService) CreateAuditLog(ctx context.Context, req model.AuditLogCre
 	return auditLog, nil
 }
 
-func (s *auditService) GetAllAuditLogs(ctx context.Context, ) ([]model.AuditLog, error) {
+func (s *auditService) GetAllAuditLogs(ctx context.Context) ([]model.AuditLog, error) {
 	return s.repo.GetAll(ctx)
 }
 

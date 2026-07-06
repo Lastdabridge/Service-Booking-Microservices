@@ -8,7 +8,7 @@ import (
 
 type AuditRepository interface {
 	Create(ctx context.Context, log *model.AuditLog) error
-	GetAll(ctx context.Context, ) ([]model.AuditLog, error)
+	GetAll(ctx context.Context) ([]model.AuditLog, error)
 	GetByID(ctx context.Context, id uint) (*model.AuditLog, error)
 }
 
@@ -24,7 +24,7 @@ func (r *auditRepo) Create(ctx context.Context, auditLog *model.AuditLog) error 
 	return r.db.WithContext(ctx).Create(auditLog).Error
 }
 
-func (r *auditRepo) GetAll(ctx context.Context, ) ([]model.AuditLog, error) {
+func (r *auditRepo) GetAll(ctx context.Context) ([]model.AuditLog, error) {
 	var auditLogs []model.AuditLog
 	if err := r.db.WithContext(ctx).Find(&auditLogs).Error; err != nil {
 		return nil, err

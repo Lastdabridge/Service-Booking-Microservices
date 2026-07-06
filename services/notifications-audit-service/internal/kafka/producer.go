@@ -139,6 +139,10 @@ func (p *Producer) PublishAuditLogged(ctx context.Context, auditLog *model.Audit
 }
 
 func publish(ctx context.Context, topic string, payload any) error {
+	if kafkaWriter == nil {
+        return fmt.Errorf("kafka writer not initialized, call InitWriter first")
+    }
+	
 	data, err := json.Marshal(payload)
 	if err != nil {
 		return fmt.Errorf("failed to marshal event payload: %w", err)

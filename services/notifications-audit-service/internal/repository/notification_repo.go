@@ -22,7 +22,6 @@ func NewNotificationRepository(db *gorm.DB) NotificationRepository {
 }
 
 func (r *notificationRepo) Create(ctx context.Context, notification *model.Notification) error {
-	// если ctx отменён, запрос к БД прервётся, а не будет висеть до завершения.
 	return r.db.WithContext(ctx).Create(notification).Error
 }
 

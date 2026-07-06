@@ -29,6 +29,15 @@ func main() {
 	}
 	log.Println("[STARTUP] database connected successfully")
 
+	sqlDB, err := db.DB()
+	if err != nil {
+    	log.Fatalf("[STARTUP] failed to get underlying sql.DB: %v", err)
+	}
+	if err := sqlDB.Ping(); err != nil {
+    	log.Fatalf("[STARTUP] failed to ping database: %v", err)
+	}
+	log.Println("[STARTUP] database connection verified")
+
 	if err := db.AutoMigrate(&model.Notification{}, &model.AuditLog{}); err != nil {
 		log.Fatalf("[STARTUP] database migration failed: %v", err)
 	}
