@@ -20,7 +20,7 @@ type gormUserRepository struct {
 }
 
 func NewUserRepository(db *gorm.DB) UserRepository {
-	return &gormUserRepository{db:db}
+	return &gormUserRepository{db: db}
 }
 
 func (r *gormUserRepository) Register(user *model.User) error {
@@ -47,7 +47,7 @@ func (r *gormUserRepository) GetByID(id uint) (*model.User, error) {
 func (r *gormUserRepository) GetByEmail(email string) (*model.User, error) {
 	var user model.User
 
-	if err := r.db.Where("email = ?", email).First(&user).Error; err != nil {
+	if err := r.db.Where("LOWER(email) = LOWER(?)", email).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
