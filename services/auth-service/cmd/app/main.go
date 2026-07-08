@@ -44,5 +44,7 @@ func main() {
 
 	userHandler.RegisterRoutes(r)
 
-	r.Run(":8081")
+	if err := r.Run(":8081"); err != nil {
+		log.Fatalf("failed to run the HTTP server")
+	}
 }

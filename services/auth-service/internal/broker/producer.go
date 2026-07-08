@@ -2,6 +2,7 @@ package broker
 
 import (
 	"context"
+
 	kafkaGo "github.com/segmentio/kafka-go"
 )
 
@@ -12,10 +13,10 @@ type Producer struct {
 func NewProducer(brokers []string, topic string) *Producer {
 	return &Producer{
 		writer: &kafkaGo.Writer{
-			Addr:                   kafkaGo.TCP(brokers...),
-			Topic:                  topic,
-			Balancer:               &kafkaGo.LeastBytes{},
-			BatchSize:              1,
+			Addr:      kafkaGo.TCP(brokers...),
+			Topic:     topic,
+			Balancer:  &kafkaGo.LeastBytes{},
+			BatchSize: 1,
 		},
 	}
 }

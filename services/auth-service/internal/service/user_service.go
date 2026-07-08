@@ -66,7 +66,7 @@ func (u *userService) RegisterUser(req model.UserRegister) error {
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return apperrors.ErrPasswordHashFailed
+		return err
 	}
 
 	user := model.User{

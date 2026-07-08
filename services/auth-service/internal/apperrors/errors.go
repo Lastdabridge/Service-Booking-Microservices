@@ -13,7 +13,6 @@ type Err struct {
 var (
 	ErrUserAlreadyExists   = errors.New("user with this email already exists")
 	ErrNameHasSpecialChars = errors.New("name must not contain special characters")
-	ErrPasswordHashFailed  = errors.New("failed to hash password")
 
 	ErrInvalidLoginOrPassword = errors.New("invalid login or password")
 	ErrAccountNotFound        = errors.New("account not found")
@@ -31,10 +30,6 @@ var errsMap = map[error]Err{
 	ErrNameHasSpecialChars: {
 		StatusCode: http.StatusBadRequest, // 400
 		Msg:        ErrNameHasSpecialChars.Error(),
-	},
-	ErrPasswordHashFailed: {
-		StatusCode: http.StatusInternalServerError, // 500
-		Msg:        ErrPasswordHashFailed.Error(),
 	},
 	ErrInvalidLoginOrPassword: {
 		StatusCode: http.StatusUnauthorized, // 401

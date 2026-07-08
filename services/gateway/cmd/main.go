@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -32,6 +33,8 @@ func reverseProxy(target string) gin.HandlerFunc {
 func main() {
 	r := gin.Default()
 
+	r.Use(transport.RateLimiter())
+
 	userProxy := reverseProxy(os.Getenv("USER_URL"))
 	catalogProxy := reverseProxy(os.Getenv("CATALOG_URL"))
 	bookingProxy := reverseProxy(os.Getenv("BOOKING_URL"))
@@ -58,5 +61,7 @@ func main() {
 	protected.Any("/notifications/*path", notificationsAndAuditProxy)
 	protected.Any("/audit/*path", notificationsAndAuditProxy)
 
-	r.Run(":8080")
+	if err := r.Run(":8080"); err != nil {
+		log.Fatalf("failed to run the HTTP server")
+	}
 }

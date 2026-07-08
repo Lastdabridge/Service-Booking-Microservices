@@ -74,14 +74,12 @@ func (h *UserHandler) MyAccount(c *gin.Context) {
 		return
 	}
 
-	// надо ли проверять, если передает не клиент?
 	userID, err := strconv.Atoi(userIDStr)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid user context"})
 		return
 	}
 
-	//нужно ли переводить в uint, если принимаем то, что пришло из gateway?
 	user, err := h.service.GetMyAccount(uint(userID))
 	if err != nil {
 		if errors.Is(err, apperrors.ErrAccountNotFound) {
