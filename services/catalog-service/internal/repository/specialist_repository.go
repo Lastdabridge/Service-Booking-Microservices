@@ -3,6 +3,7 @@ package repository
 import (
 	"catalog-service/internal/models"
 
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
@@ -20,10 +21,11 @@ type SpecialistRepository interface {
 
 type gormSpecialistRepository struct {
 	db *gorm.DB
+	rdb *redis.Client
 }
 
-func NewSpecialistRepository(db *gorm.DB) SpecialistRepository {
-	return &gormSpecialistRepository{db: db}
+func NewSpecialistRepository(db *gorm.DB, rdb *redis.Client) SpecialistRepository {
+	return &gormSpecialistRepository{db: db, rdb: rdb}
 }
 
 func (r *gormSpecialistRepository) CreateSpecialist(req *models.Specialist) error {

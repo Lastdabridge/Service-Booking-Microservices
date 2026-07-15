@@ -2,7 +2,11 @@ package repository
 
 import (
 	"catalog-service/internal/models"
+	"context"
+	"encoding/json"
+	"time"
 
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
@@ -26,17 +30,28 @@ type ServicesRepository interface {
 
 type gormServicesRepository struct {
 	db *gorm.DB
+	rdb *redis.Client
 }
 
-func NewServicesRepositry(db *gorm.DB) ServicesRepository {
-	return &gormServicesRepository{db: db}
+func NewServicesRepositry(db *gorm.DB, rdb *redis.Client) ServicesRepository {
+	return &gormServicesRepository{db: db, rdb: rdb}
 }
 
 func (r *gormServicesRepository) GetServices() ([]models.Service, error) {
+	cahced, err := r.rdb.Get(context.Background(), "services:all").Result()
+	if err == nil {
+		var services []models.Service
+		json.Unmarshal([]byte(cahced), &services)
+		return services, nil
+	}
+
 	var service []models.Service
 	if err := r.db.Find(&service).Error; err != nil {
 		return nil, err
 	}
+
+	data, _ := json.Marshal(service)
+	r.rdb.Set(context.Background(), "services:all", data, 5*time.Minute)
 	return service, nil
 }
 

@@ -3,6 +3,7 @@ package repository
 import (
 	"catalog-service/internal/models"
 
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
@@ -18,10 +19,11 @@ type SchedulesRepository interface {
 
 type gormSchedulesRepository struct {
 	db *gorm.DB
+	rdb *redis.Client
 }
 
-func NewSchedulesRepository(db *gorm.DB) SchedulesRepository {
-	return &gormSchedulesRepository{db: db}
+func NewSchedulesRepository(db *gorm.DB, rdb *redis.Client) SchedulesRepository {
+	return &gormSchedulesRepository{db: db, rdb: rdb}
 }
 
 func (r *gormSchedulesRepository) CreateSchedules(specialistID uint, req *models.SpecialistSchedule) error {
