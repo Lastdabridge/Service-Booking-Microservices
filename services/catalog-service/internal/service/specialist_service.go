@@ -17,6 +17,8 @@ type SpecialistService interface {
 	DeleteSpecialist(c context.Context, id uint) error
 
 	GetAllSpecilist() ([]models.Specialist, error)
+
+	GetSpecialistsByName(name string) ([]models.Specialist, error)
 }
 
 type specialistService struct {
@@ -131,4 +133,12 @@ func (s *specialistService) GetAllSpecilist() ([]models.Specialist, error) {
 	}
 
 	return spec, nil
+}
+
+func (s *specialistService) GetSpecialistsByName(name string) ([]models.Specialist, error) {
+	specialist, err := s.service.GetSpecialistByName(name)
+	if err != nil {
+		return nil, err
+	}
+	return specialist, nil
 }

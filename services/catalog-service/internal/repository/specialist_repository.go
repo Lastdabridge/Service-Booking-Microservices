@@ -2,6 +2,10 @@ package repository
 
 import (
 	"catalog-service/internal/models"
+	"context"
+	"encoding/json"
+	"fmt"
+	"time"
 
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
@@ -15,6 +19,8 @@ type SpecialistRepository interface {
 	DeleteSpecialist(id uint) error
 
 	GetAllSpecilist() ([]models.Specialist, error)
+
+	GetSpecialistByName(name string) ([]models.Specialist, error)
 
 	GetByID(id uint) (*models.Specialist, error)
 }
@@ -43,11 +49,40 @@ func (r *gormSpecialistRepository) DeleteSpecialist(id uint) error {
 }
 
 func (r *gormSpecialistRepository) GetAllSpecilist() ([]models.Specialist, error) {
+	cached, err := r.rdb.Get(context.Background(), "specialist:all").Result()
+	if err == nil {
+		var specialist []models.Specialist
+		json.Unmarshal([]byte(cached), &specialist)
+		return specialist, nil
+	}
+
 	var spec []models.Specialist
 	if err := r.db.Find(&spec).Error; err != nil {
 		return nil, err
 	}
+	
+	data, _ := json.Marshal(spec)
+	r.rdb.Set(context.Background(), "specialist:all", data, 5*time.Minute)
 	return spec, nil
+}
+
+func(r *gormSpecialistRepository) GetSpecialistByName(name string) ([]models.Specialist, error) {
+	key := fmt.Sprintf("specialist:title:%s", name)
+	cached, err := r.rdb.Get(context.Background(), key).Result()
+	if err == nil {
+		var specialist []models.Specialist
+		json.Unmarshal([]byte(cached), &specialist)
+		return specialist, nil
+	}
+
+	var specialist []models.Specialist
+	if err := r.db.Where("name ILIKE ?", "%"+name+"%").Find(specialist).Error; err != nil {
+		return nil, err
+	}
+
+	data, _ := json.Marshal(specialist)
+	r.rdb.Set(context.Background(), key, data, 5*time.Minute)
+	return specialist, nil
 }
 
 func (r *gormSpecialistRepository) GetByID(id uint) (*models.Specialist, error) {

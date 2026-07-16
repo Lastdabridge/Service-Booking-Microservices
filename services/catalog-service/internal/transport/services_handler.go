@@ -21,6 +21,7 @@ func NewServicesHandler(service service.ServicesService) *ServicesHandler {
 func (h *ServicesHandler) RegisterRoutes(r *gin.Engine) {
 	services := r.Group("/services/")
 	services.GET("", h.GetAll)
+	services.GET("/search", h.GetServicesByTitle)
 
 	services.Use(middleware.RoleMiddleware("admin"))
 	{
@@ -36,6 +37,22 @@ func (h *ServicesHandler) GetAll(c *gin.Context) {
 	services, err := h.service.GetServices()
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, services)
+}
+
+func (h *ServicesHandler) GetServicesByTitle(c *gin.Context) {
+	query := c.Query("q")
+	if query == "" {
+		c.JSON(http.StatusBadRequest, "query parameter 'q' is required")
+		return
+	}
+
+	services, err := h.service.GetServicesByTitle(query)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 

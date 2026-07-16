@@ -12,6 +12,8 @@ import (
 type ServicesService interface {
 	GetServices() ([]models.Service, error)
 
+	GetServicesByTitle(title string) ([]models.Service, error)
+
 	CreateService(c context.Context, req dto.CreateServiceRequest) (*models.Service, error)
 
 	CreateSpecServ(c context.Context, req dto.CreateSpecServ) (*models.SpecialistService, error)
@@ -49,6 +51,14 @@ func (s *servicesServise) GetServices() ([]models.Service, error) {
 		return nil, err
 	}
 	return service, nil
+}
+
+func (s *servicesServise) GetServicesByTitle(title string) ([]models.Service, error) {
+	services, err := s.service.GetServiceByTitle(title)
+	if err != nil {
+		return nil, err
+	}
+	return services, nil
 }
 
 func (s *servicesServise) CreateService(c context.Context, req dto.CreateServiceRequest) (*models.Service, error) {

@@ -4,6 +4,7 @@ import (
 	"catalog-service/internal/models"
 	"context"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -12,6 +13,8 @@ import (
 
 type ServicesRepository interface {
 	GetServices() ([]models.Service, error)
+
+	GetServiceByTitle(title string) ([]models.Service, error)
 
 	CreateService(req *models.Service) error
 
@@ -52,6 +55,25 @@ func (r *gormServicesRepository) GetServices() ([]models.Service, error) {
 
 	data, _ := json.Marshal(service)
 	r.rdb.Set(context.Background(), "services:all", data, 5*time.Minute)
+	return service, nil
+}
+
+func(r *gormServicesRepository) GetServiceByTitle(title string) ([]models.Service, error) {
+	key := fmt.Sprintf("service:title:%s", title)
+	cached, err := r.rdb.Get(context.Background(), key).Result()
+	if err == nil {
+		var service []models.Service
+		json.Unmarshal([]byte(cached), &service)
+		return service, nil
+	}
+
+	var service []models.Service
+	if err := r.db.Where("title ILIKE ?", "%"+title+"%").Find(&service).Error; err != nil {
+		return nil, err
+	}
+
+	data, _ := json.Marshal(service)
+	r.rdb.Set(context.Background(), key, data, 5*time.Minute)
 	return service, nil
 }
 
