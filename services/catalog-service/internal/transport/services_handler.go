@@ -34,7 +34,7 @@ func (h *ServicesHandler) RegisterRoutes(r *gin.Engine) {
 }
 
 func (h *ServicesHandler) GetAll(c *gin.Context) {
-	services, err := h.service.GetServices()
+	services, err := h.service.GetServices(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -50,7 +50,7 @@ func (h *ServicesHandler) GetServicesByTitle(c *gin.Context) {
 		return
 	}
 
-	services, err := h.service.GetServicesByTitle(query)
+	services, err := h.service.GetServicesByTitle(c, query)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
