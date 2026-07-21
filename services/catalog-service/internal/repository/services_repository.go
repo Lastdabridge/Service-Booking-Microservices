@@ -117,9 +117,7 @@ func (r *gormServicesRepository) UpdateService(ctx context.Context, id uint, req
 		return err
 	}
 
-	if err := r.db.WithContext(ctx).Model(&models.Service{}).
-		Where("id = ?", id).
-		Updates(req).Error; err != nil {
+	if err := r.db.WithContext(ctx).Model(&models.Service{}).Where("id = ?", id).Updates(req).Error; err != nil {
 		return err
 	}
 	keysToDelete := []string{
