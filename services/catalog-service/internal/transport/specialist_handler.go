@@ -21,6 +21,7 @@ func NewSpecialistHandler(specialist service.SpecialistService) *SpecialistHandl
 func (h *SpecialistHandler) RegisterRoutes(r *gin.Engine) {
 	spec := r.Group("/specialists/")
 	spec.GET("", h.GetAllSpecialists)
+	spec.GET("/search", h.GetSpecialistByName)
 
 	spec.Use(middleware.RoleMiddleware("admin"))
 	{
@@ -38,6 +39,22 @@ func (h *SpecialistHandler) GetAllSpecialists(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, spec)
+}
+
+func (h *SpecialistHandler) GetSpecialistByName(c *gin.Context) {
+	query := c.Query("q")
+	if query == "" {
+		c.JSON(http.StatusBadRequest, "query parameter 'q' is required")
+		return
+	}
+
+	specialist, err := h.specialist.GetSpecialistsByName(query)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, specialist)
 }
 
 func (h *SpecialistHandler) CreateSpecialist(c *gin.Context) {

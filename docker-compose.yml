@@ -218,6 +218,7 @@ services:
     env_file:
       - services/catalog-service/.env
     environment:
+      REDIS_ADDR: "redis:6379"
       DB_HOST: catalog-service-db
       DB_SSLMODE: disable
       KAFKA_BROKERS: kafka:9092
@@ -228,7 +229,15 @@ services:
         condition: service_healthy
       kafka: 
         condition: service_started
+      redis:
+        condition: service_started
     restart: unless-stopped
+    redis:
+      image: redis:7-alpine
+      container_name: redis
+      ports:
+       - "6379:6379"
+      restart: unless-stopped
 
 volumes:
   auth-service-db-data:

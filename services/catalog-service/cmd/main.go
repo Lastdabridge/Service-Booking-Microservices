@@ -16,6 +16,13 @@ import (
 )
 
 func main() {
+	//REDIS CONFIG
+	rdb := config.NewRedisClient()
+	if err := rdb.Ping(context.Background()).Err(); err != nil {
+		log.Fatalf("redis connection failed: %v", err)
+	}
+	log.Println("redis connected")
+	//
 	db := config.SetUpDatabaseConnection()
 
 	if err := db.AutoMigrate(
@@ -33,9 +40,9 @@ func main() {
 	produce := broker.NewProducer(kafkaCfg, "catalog.events")
 	defer produce.Close()
 
-	serviceRepo := repository.NewServicesRepositry(db)
-	specialistRepo := repository.NewSpecialistRepository(db)
-	scheduleRepo := repository.NewSchedulesRepository(db)
+	serviceRepo := repository.NewServicesRepository(db, rdb)
+	specialistRepo := repository.NewSpecialistRepository(db, rdb)
+	scheduleRepo := repository.NewSchedulesRepository(db, rdb)
 	catalogEventRepo := repository.NewCatalogEventRepository(db)
 
 	serivceService := service.NewServicesService(specialistRepo, serviceRepo, produce)

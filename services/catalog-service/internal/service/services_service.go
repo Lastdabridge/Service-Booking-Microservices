@@ -10,7 +10,9 @@ import (
 )
 
 type ServicesService interface {
-	GetServices() ([]models.Service, error)
+	GetServices(c context.Context) ([]models.Service, error)
+
+	GetServicesByTitle(c context.Context,title string) ([]models.Service, error)
 
 	CreateService(c context.Context, req dto.CreateServiceRequest) (*models.Service, error)
 
@@ -43,12 +45,20 @@ func NewServicesService(
 	}
 }
 
-func (s *servicesServise) GetServices() ([]models.Service, error) {
-	service, err := s.service.GetServices()
+func (s *servicesServise) GetServices(c context.Context) ([]models.Service, error) {
+	service, err := s.service.GetServices(c)
 	if err != nil {
 		return nil, err
 	}
 	return service, nil
+}
+
+func (s *servicesServise) GetServicesByTitle(c context.Context, title string) ([]models.Service, error) {
+	services, err := s.service.GetServiceByTitle(c, title)
+	if err != nil {
+		return nil, err
+	}
+	return services, nil
 }
 
 func (s *servicesServise) CreateService(c context.Context, req dto.CreateServiceRequest) (*models.Service, error) {
@@ -64,7 +74,7 @@ func (s *servicesServise) CreateService(c context.Context, req dto.CreateService
 		IsActive:        req.IsActive,
 	}
 
-	if err := s.service.CreateService(service); err != nil {
+	if err := s.service.CreateService(c, service); err != nil {
 		return nil, err
 	}
 
@@ -89,7 +99,7 @@ func (s *servicesServise) CreateSpecServ(c context.Context, req dto.CreateSpecSe
 		return nil, err
 	}
 
-	_, err := s.service.GetByID(req.ServiceID)
+	_, err := s.service.GetByID(c, req.ServiceID)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +113,7 @@ func (s *servicesServise) CreateSpecServ(c context.Context, req dto.CreateSpecSe
 		SpecialistID: req.SpecialistID,
 	}
 
-	if err := s.service.CreateSpecServ(specServ); err != nil {
+	if err := s.service.CreateSpecServ(c, specServ); err != nil {
 		return nil, err
 	}
 
@@ -124,7 +134,7 @@ func (s *servicesServise) UpdateService(c context.Context, id uint, req dto.Upda
 		return nil, err
 	}
 
-	services, err := s.service.GetByID(id)
+	services, err := s.service.GetByID(c, id)
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +154,7 @@ func (s *servicesServise) UpdateService(c context.Context, id uint, req dto.Upda
 		services.IsActive = *req.IsActive
 	}
 
-	if err := s.service.UpdateService(id, services); err != nil {
+	if err := s.service.UpdateService(c, id, services); err != nil {
 		return nil, err
 	}
 
@@ -165,12 +175,12 @@ func (s *servicesServise) UpdateService(c context.Context, id uint, req dto.Upda
 }
 
 func (s *servicesServise) DeleteService(c context.Context, id uint) error {
-	_, err := s.service.GetByID(id)
+	_, err := s.service.GetByID(c, id)
 
 	if err != nil {
 		return err
 	}
-	if err := s.service.DeleteService(id); err != nil {
+	if err := s.service.DeleteService(c, id); err != nil {
 		return err
 	}
 
@@ -185,11 +195,11 @@ func (s *servicesServise) DeleteService(c context.Context, id uint) error {
 }
 
 func (s *servicesServise) DeleteSpecServ(c context.Context, id uint) error {
-	specialist, err := s.service.GetByIDSpecServ(id)
+	specialist, err := s.service.GetByIDSpecServ(c, id)
 	if err != nil {
 		return err
 	}
-	if err := s.service.DeleteSpecServ(id); err != nil {
+	if err := s.service.DeleteSpecServ(c, id); err != nil {
 		return err
 	}
 
