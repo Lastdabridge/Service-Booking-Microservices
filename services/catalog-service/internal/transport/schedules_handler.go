@@ -38,7 +38,7 @@ func (h *SchedulesHandler) GetSpecialistSchedule(c *gin.Context) {
 		return
 	}
 
-	sched, err := h.schedule.GetByID(uint(id))
+	sched, err := h.schedule.GetByID(c.Request.Context(), uint(id))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -60,9 +60,10 @@ func (h *SchedulesHandler) CreateSchedules(c *gin.Context) {
 		return
 	}
 
-	sched, err := h.schedule.CreateSchedules(c, uint(id), req)
+	sched, err := h.schedule.CreateSchedules(c.Request.Context(), uint(id), req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 
 	c.JSON(http.StatusCreated, sched)
@@ -81,7 +82,7 @@ func (h *SchedulesHandler) UpdateSchedules(c *gin.Context) {
 		return
 	}
 
-	sched, err := h.schedule.UpdateSchedules(c, uint(id), req)
+	sched, err := h.schedule.UpdateSchedules(c.Request.Context(), uint(id), req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -97,7 +98,7 @@ func (h *SchedulesHandler) DeleteSchedules(c *gin.Context) {
 		return
 	}
 
-	if err := h.schedule.DeleteSchedules(c, uint(id)); err != nil {
+	if err := h.schedule.DeleteSchedules(c.Request.Context(), uint(id)); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

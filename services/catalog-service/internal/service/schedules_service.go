@@ -10,7 +10,7 @@ import (
 )
 
 type SchedulesService interface {
-	GetByID(id uint) (*models.SpecialistSchedule, error)
+	GetByID(c context.Context, id uint) (*models.SpecialistSchedule, error)
 
 	CreateSchedules(c context.Context, id uint, req dto.ScheduleCreateRequest) (*models.SpecialistSchedule, error)
 
@@ -36,8 +36,8 @@ func NewSchedulesService(
 	}
 }
 
-func (s *schedulesService) GetByID(id uint) (*models.SpecialistSchedule, error) {
-	schedule, err := s.service.GetByID(id)
+func (s *schedulesService) GetByID(c context.Context, id uint) (*models.SpecialistSchedule, error) {
+	schedule, err := s.service.GetByID(c, id)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +56,7 @@ func (s *schedulesService) CreateSchedules(c context.Context, id uint, req dto.S
 		StartTime:    req.StartTime,
 		EndTime:      req.EndTime,
 	}
-	if err := s.service.CreateSchedules(id, schedule); err != nil {
+	if err := s.service.CreateSchedules(c, id, schedule); err != nil {
 		return nil, err
 	}
 
@@ -75,7 +75,7 @@ func (s *schedulesService) CreateSchedules(c context.Context, id uint, req dto.S
 }
 
 func (s *schedulesService) UpdateSchedules(c context.Context, id uint, req dto.ScheduleUpdateRequest) (*models.SpecialistSchedule, error) {
-	schedule, err := s.service.GetByID(id)
+	schedule, err := s.service.GetByID(c, id)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +90,7 @@ func (s *schedulesService) UpdateSchedules(c context.Context, id uint, req dto.S
 		schedule.EndTime = *req.EndTime
 	}
 
-	if err := s.service.UpdateSchedules(id, schedule); err != nil {
+	if err := s.service.UpdateSchedules(c, id, schedule); err != nil {
 		return nil, err
 	}
 	event := &broker.SpecialistSchedules{
@@ -108,10 +108,10 @@ func (s *schedulesService) UpdateSchedules(c context.Context, id uint, req dto.S
 }
 
 func (s *schedulesService) DeleteSchedules(c context.Context, id uint) error {
-	if _, err := s.service.GetByID(id); err != nil {
+	if _, err := s.service.GetByID(c, id); err != nil {
 		return err
 	}
-	if err := s.service.DeleteSchedules(id); err != nil {
+	if err := s.service.DeleteSchedules(c, id); err != nil {
 		return err
 	}
 

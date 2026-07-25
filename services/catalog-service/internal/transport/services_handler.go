@@ -34,7 +34,7 @@ func (h *ServicesHandler) RegisterRoutes(r *gin.Engine) {
 }
 
 func (h *ServicesHandler) GetAll(c *gin.Context) {
-	services, err := h.service.GetServices(c)
+	services, err := h.service.GetServices(c.Request.Context())
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -50,7 +50,7 @@ func (h *ServicesHandler) GetServicesByTitle(c *gin.Context) {
 		return
 	}
 
-	services, err := h.service.GetServicesByTitle(c, query)
+	services, err := h.service.GetServicesByTitle(c.Request.Context(), query)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -66,7 +66,7 @@ func (h *ServicesHandler) CreateService(c *gin.Context) {
 		return
 	}
 
-	services, err := h.service.CreateService(c, req)
+	services, err := h.service.CreateService(c.Request.Context(), req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -88,7 +88,7 @@ func (h *ServicesHandler) UpdateService(c *gin.Context) {
 		return
 	}
 
-	services, err := h.service.UpdateService(c, uint(id), req)
+	services, err := h.service.UpdateService(c.Request.Context(), uint(id), req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -104,7 +104,7 @@ func (h *ServicesHandler) DeleteService(c *gin.Context) {
 		return
 	}
 
-	if err = h.service.DeleteService(c, uint(id)); err != nil {
+	if err = h.service.DeleteService(c.Request.Context(), uint(id)); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -119,7 +119,7 @@ func (h *ServicesHandler) CreateSpecServ(c *gin.Context) {
 		return
 	}
 
-	specServ, err := h.service.CreateSpecServ(c, req)
+	specServ, err := h.service.CreateSpecServ(c.Request.Context(), req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -135,7 +135,7 @@ func (h *ServicesHandler) DeleteSpecServ(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.DeleteSpecServ(c, uint(id)); err != nil {
+	if err := h.service.DeleteSpecServ(c.Request.Context(), uint(id)); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

@@ -16,9 +16,9 @@ type SpecialistService interface {
 
 	DeleteSpecialist(c context.Context, id uint) error
 
-	GetAllSpecilist() ([]models.Specialist, error)
+	GetAllSpecialists(c context.Context) ([]models.Specialist, error)
 
-	GetSpecialistsByName(name string) ([]models.Specialist, error)
+	GetSpecialistsByName(c context.Context, name string) ([]models.Specialist, error)
 }
 
 type specialistService struct {
@@ -49,7 +49,7 @@ func (s *specialistService) CreateSpecialist(c context.Context, req dto.Speciali
 		IsActive:    req.IsActive,
 	}
 
-	if err := s.service.CreateSpecialist(spec); err != nil {
+	if err := s.service.CreateSpecialist(c, spec); err != nil {
 		return nil, err
 	}
 
@@ -72,7 +72,7 @@ func (s *specialistService) UpdateSpecialist(c context.Context, id uint, req dto
 		return nil, err
 	}
 
-	spec, err := s.service.GetByID(id)
+	spec, err := s.service.GetByID(c, id)
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +87,7 @@ func (s *specialistService) UpdateSpecialist(c context.Context, id uint, req dto
 		spec.IsActive = *req.IsActive
 	}
 
-	if err := s.service.UpdateSpecialist(id, spec); err != nil {
+	if err := s.service.UpdateSpecialist(c, id, spec); err != nil {
 		return nil, err
 	}
 
@@ -106,12 +106,12 @@ func (s *specialistService) UpdateSpecialist(c context.Context, id uint, req dto
 }
 
 func (s *specialistService) DeleteSpecialist(c context.Context, id uint) error {
-	_, err := s.service.GetByID(id)
+	_, err := s.service.GetByID(c, id)
 	if err != nil {
 		return err
 	}
 
-	if err := s.service.DeleteSpecialist(id); err != nil {
+	if err := s.service.DeleteSpecialist(c, id); err != nil {
 		return err
 	}
 
@@ -126,8 +126,8 @@ func (s *specialistService) DeleteSpecialist(c context.Context, id uint) error {
 	return nil
 }
 
-func (s *specialistService) GetAllSpecilist() ([]models.Specialist, error) {
-	spec, err := s.service.GetAllSpecilist()
+func (s *specialistService) GetAllSpecialists(c context.Context) ([]models.Specialist, error) {
+	spec, err := s.service.GetAllSpecialists(c)
 	if err != nil {
 		return nil, err
 	}
@@ -135,8 +135,8 @@ func (s *specialistService) GetAllSpecilist() ([]models.Specialist, error) {
 	return spec, nil
 }
 
-func (s *specialistService) GetSpecialistsByName(name string) ([]models.Specialist, error) {
-	specialist, err := s.service.GetSpecialistByName(name)
+func (s *specialistService) GetSpecialistsByName(c context.Context, name string) ([]models.Specialist, error) {
+	specialist, err := s.service.GetSpecialistByName(c, name)
 	if err != nil {
 		return nil, err
 	}

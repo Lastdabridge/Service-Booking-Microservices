@@ -32,7 +32,7 @@ func (h *SpecialistHandler) RegisterRoutes(r *gin.Engine) {
 }
 
 func (h *SpecialistHandler) GetAllSpecialists(c *gin.Context) {
-	spec, err := h.specialist.GetAllSpecilist()
+	spec, err := h.specialist.GetAllSpecialists(c.Request.Context())
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -48,7 +48,7 @@ func (h *SpecialistHandler) GetSpecialistByName(c *gin.Context) {
 		return
 	}
 
-	specialist, err := h.specialist.GetSpecialistsByName(query)
+	specialist, err := h.specialist.GetSpecialistsByName(c.Request.Context(), query)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -64,7 +64,7 @@ func (h *SpecialistHandler) CreateSpecialist(c *gin.Context) {
 		return
 	}
 
-	spec, err := h.specialist.CreateSpecialist(c, req)
+	spec, err := h.specialist.CreateSpecialist(c.Request.Context(), req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -87,7 +87,7 @@ func (h *SpecialistHandler) UpdateSpecialist(c *gin.Context) {
 		return
 	}
 
-	spec, err := h.specialist.UpdateSpecialist(c, uint(id), req)
+	spec, err := h.specialist.UpdateSpecialist(c.Request.Context(), uint(id), req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -103,7 +103,7 @@ func (h *SpecialistHandler) DeleteSpecialist(c *gin.Context) {
 		return
 	}
 
-	if err := h.specialist.DeleteSpecialist(c, uint(id)); err != nil {
+	if err := h.specialist.DeleteSpecialist(c.Request.Context(), uint(id)); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

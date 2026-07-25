@@ -103,7 +103,7 @@ func (s *servicesServise) CreateSpecServ(c context.Context, req dto.CreateSpecSe
 	if err != nil {
 		return nil, err
 	}
-	_, err = s.specialist.GetByID(req.SpecialistID)
+	_, err = s.specialist.GetByID(c, req.SpecialistID)
 	if err != nil {
 		return nil, err
 	}
